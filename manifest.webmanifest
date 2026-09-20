@@ -1,0 +1,15 @@
+{
+  "name": "StreetFlow",
+  "short_name": "StreetFlow",
+  "description": "StreetFlow Fahrer-App (MVP-Klickdummy)",
+  "start_url": "?app=1",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0A0A",
+  "theme_color": "#0A0A0A",
+  "icons": [
+    { "src": "app-icon.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" },
+    { "src": "app-icon.png", "sizes": "1024x1024", "type": "image/png", "purpose": "maskable" }
+  ]
+}

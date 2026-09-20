@@ -1,0 +1,1010 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>StreetFlow</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@500;600;700&display=swap">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="app-icon.png">
+<link rel="apple-touch-icon" href="app-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="StreetFlow">
+<meta name="theme-color" content="#0A0A0A">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<style>
+:root{
+  --orange:#FF5A00; --orange-soft:rgba(255,90,0,.14);
+  --void:#0A0A0A; --ink:#161616; --ink2:#1E1E1E; --fog:#2E2E2C; --fog2:#3A3A38;
+  --paper:#F5F5F5; --paper-70:rgba(245,245,245,.72); --paper-45:rgba(245,245,245,.5);
+  --cobalt:#2B4EFF; --cobalt-soft:rgba(43,78,255,.18);
+  --ok:#22C55E; --warn:#FBBF24; --err:#EF4444;
+  --display:'Anton', 'Impact', 'Arial Narrow', sans-serif;
+  --body:'Barlow', 'Helvetica Neue', Arial, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--void);color:var(--paper);font-family:var(--body);font-weight:500;font-size:15px;line-height:1.45;padding-block:0 40px;padding-inline:20px}
+h1,h2,h3,h4{margin:0;font-family:var(--display);font-weight:400;letter-spacing:.01em;text-transform:uppercase;text-wrap:balance}
+p{margin:0}
+button{font-family:inherit;font-weight:600;cursor:pointer;border:0;border-radius:8px}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--cobalt);outline-offset:2px}
+.wrap{max-width:1240px;margin:0 auto}
+
+/* App-Modus: als installierte App vom Homescreen geöffnet, oder ?app=1 zum Testen im Browser. Zeigt nur den Fahrer-App-Screen, randlos, ohne Pitch-Deck-Rahmen. */
+body.kiosk{padding:0;background:var(--void);overscroll-behavior-y:none}
+body.kiosk .wrap{max-width:none;margin:0}
+body.kiosk .top,body.kiosk .tabs,body.kiosk #steps,body.kiosk .panel,body.kiosk .kioskhide{display:none!important}
+body.kiosk .main{display:block}
+body.kiosk .stage{min-width:0}
+body.kiosk .phone{width:100%;max-width:none;height:100vh;height:100dvh;margin:0;background:var(--void);border:0;border-radius:0;padding:0;box-shadow:none}
+body.kiosk .phone .notch{display:none}
+body.kiosk .screen{border-radius:0;padding-top:env(safe-area-inset-top,0px)}
+body.kiosk .sb{display:none}
+body.kiosk .nav{padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}
+body.kiosk .appbar{padding-top:10px}
+.kiosk-exit{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:10px;z-index:50;width:30px;height:30px;border-radius:50%;background:rgba(20,20,20,.55);color:var(--paper-70);display:none;align-items:center;justify-content:center;font-size:15px;backdrop-filter:blur(6px)}
+body.kiosk .kiosk-exit{display:flex}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:22px 14px;border-bottom:1px solid var(--fog)}
+.logo{font-family:var(--display);font-size:34px;line-height:1;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap}
+.logo .s{color:var(--orange)}
+.logo .f{color:transparent;-webkit-text-stroke:1.5px var(--paper)}
+.top .meta{font-size:13px;color:var(--paper-45);text-transform:uppercase;letter-spacing:.08em}
+.top .meta b{color:var(--paper);font-weight:700}
+
+.tabs{display:flex;gap:6px;flex-wrap:wrap;padding-block:16px}
+.tab{background:var(--ink);color:var(--paper-70);padding:10px 16px;border:1px solid var(--fog);font-size:14px;letter-spacing:.02em;display:flex;align-items:center;gap:8px}
+.tab .n{font-family:var(--display);font-size:15px;color:var(--paper-45)}
+.tab.on{background:var(--orange);color:var(--void);border-color:var(--orange)}
+.tab.on .n{color:var(--void)}
+
+.main{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:22px;align-items:start}
+@media (max-width:980px){.main{grid-template-columns:1fr}}
+.stage{min-width:0}
+.steps{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px}
+.step{background:transparent;color:var(--paper-45);padding:6px 10px;border:1px solid var(--fog);border-radius:6px;font-size:12.5px;letter-spacing:.03em;text-transform:uppercase}
+.step.on{color:var(--paper);border-color:var(--orange);background:var(--orange-soft)}
+.step.done{color:var(--paper-70)}
+
+.panel{background:var(--ink);border:1px solid var(--fog);border-radius:14px;padding:20px;position:sticky;top:16px}
+.panel .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--orange);font-weight:700}
+.panel h2{font-size:28px;line-height:1.05;margin:6px 0 12px}
+.panel p{color:var(--paper-70);font-size:14.5px}
+.panel h4{font-size:13px;letter-spacing:.1em;color:var(--paper-45);margin:18px 0 8px}
+.panel ul{margin:0;padding-left:18px;color:var(--paper-70);font-size:14px}
+.panel li{margin-bottom:5px}
+.panel .why{background:var(--cobalt-soft);border-left:3px solid var(--cobalt);padding:10px 12px;border-radius:0 8px 8px 0;font-size:13.5px;color:var(--paper);margin-top:16px}
+.pnav{display:flex;gap:8px;margin-top:18px}
+.pnav button{flex:1;padding:10px;background:var(--fog);color:var(--paper);font-size:14px}
+.pnav button.next{background:var(--orange);color:var(--void)}
+.pnav button:disabled{opacity:.35;cursor:default}
+
+.phone{width:390px;max-width:100%;height:820px;margin:0 auto;background:#000;border:2px solid var(--fog2);border-radius:44px;padding:12px;position:relative;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.phone .notch{position:absolute;top:24px;left:50%;transform:translateX(-50%);width:122px;height:34px;background:#000;border-radius:20px;z-index:5;box-shadow:0 0 0 1px #0d0d0d}
+.phone .notch:after{content:"";position:absolute;right:13px;top:11px;width:12px;height:12px;border-radius:50%;background:#12141c;box-shadow:inset 0 0 2px 1px #1f2433}
+.phone{border-color:#2a2a2a;box-shadow:0 30px 80px rgba(0,0,0,.65),inset 0 0 0 2px #0e0e0e,0 0 0 1px #3a3a38}
+.screen{height:100%;background:var(--void);border-radius:34px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.sb{height:48px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 26px 4px;font-size:13px;font-weight:700;color:var(--paper-70)}
+.sc{flex:1;overflow-y:auto;padding:14px 18px 24px;scrollbar-width:thin;scrollbar-color:var(--fog) transparent;--dx:36px;animation:scIn .34s cubic-bezier(.2,.7,.2,1) both}
+.screen[data-dir="back"] .sc{--dx:-36px}
+@keyframes scIn{from{opacity:0;transform:translateX(var(--dx))}to{opacity:1;transform:none}}
+.btn,.slot,.sw,.shop,.seg button,.nav button,.pk{transition:transform .12s ease,background .2s ease,border-color .2s ease}
+.btn:active,.slot:active,.sw:active,.seg button:active,.pk:active{transform:scale(.965)}
+.nav button:active{transform:scale(.9)}
+.ring svg circle:nth-child(2){animation:ringIn 1.3s cubic-bezier(.2,.7,.2,1) both}
+@keyframes ringIn{from{stroke-dasharray:0 264}}
+.bar i{animation:barIn 1.1s cubic-bezier(.2,.7,.2,1) both}
+@keyframes barIn{from{width:0}}
+.pin.on{animation:pinPop .5s cubic-bezier(.2,.9,.3,1.4)}
+@keyframes pinPop{0%{transform:translate(var(--px),var(--py)) scale(1)}40%{transform:translate(var(--px),calc(var(--py) - 10px)) scale(1.15)}100%{transform:translate(var(--px),var(--py)) scale(1)}}
+.splash{position:absolute;inset:0;background:var(--void);z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border-radius:34px;pointer-events:none}
+.splash.go{animation:splashOut .7s ease 3.4s both}
+.splash .logo{font-size:46px}
+.splash .s{display:inline-block;opacity:0}.splash.go .s{animation:fillIn 1.1s cubic-bezier(.2,.7,.2,1) .5s both}
+.splash .f{display:inline-block;opacity:0}.splash.go .f{animation:strokeIn 1.1s ease 1.4s both}
+.splash small{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--paper-45);opacity:0}.splash.go small{animation:strokeIn .9s ease 2.3s both}
+@keyframes fillIn{from{clip-path:inset(0 100% 0 0);opacity:.3}to{clip-path:inset(0 0 0 0);opacity:1}}
+@keyframes strokeIn{from{opacity:0;letter-spacing:.35em}to{opacity:1;letter-spacing:.02em}}
+@keyframes splashOut{to{opacity:0;visibility:hidden}}
+.okov{position:absolute;inset:0;background:rgba(10,10,10,.94);z-index:15;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;border-radius:34px;pointer-events:none}
+.okov.go{animation:okOut .45s ease 2.3s both}
+.okov svg{width:96px;height:96px}
+.okov circle{fill:none;stroke:var(--ok);stroke-width:5;stroke-dasharray:270;stroke-dashoffset:270}.okov.go circle{animation:draw .65s cubic-bezier(.2,.7,.2,1) .1s forwards}
+.okov path{fill:none;stroke:var(--ok);stroke-width:6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:70;stroke-dashoffset:70}.okov.go path{animation:draw .4s ease .65s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes okOut{to{opacity:0;visibility:hidden}}
+.okov b{font-family:var(--display);font-size:26px;letter-spacing:.02em;text-transform:uppercase;opacity:0}.okov.go b{animation:strokeIn .5s ease .9s both}
+.okov span{font-size:13px;color:var(--paper-70);opacity:0}.okov.go span{animation:strokeIn .5s ease 1.05s both}
+.ob{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;scrollbar-width:none;margin:0 -18px;padding:0 18px}
+.ob::-webkit-scrollbar{display:none}
+.ob>div{flex:0 0 100%;scroll-snap-align:center;background:var(--ink);border:1px solid var(--fog);border-radius:16px;padding:18px;min-height:330px;display:flex;flex-direction:column;justify-content:flex-end}
+.ob .ill{flex:1;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.ob .ill svg{width:150px;height:150px}
+.ob h3{font-size:26px;line-height:1;margin-bottom:8px}
+.ob p{color:var(--paper-70);font-size:14px}
+.dots{display:flex;gap:6px;justify-content:center;margin-top:12px}
+.dots i{width:6px;height:6px;border-radius:3px;background:var(--fog2);transition:all .2s}
+.dots i.on{width:18px;background:var(--orange)}
+.motifs{margin-top:10px}
+.motifs button{display:flex;align-items:center;gap:6px}
+.motifs i{width:10px;height:10px;border-radius:50%;display:inline-block}
+@media (prefers-reduced-motion:reduce){.sc,.ring svg circle,.bar i,.pin.on,.splash,.splash *,.okov,.okov *{animation:none!important}.splash,.okov{display:none}}
+.sc::-webkit-scrollbar{width:4px}.sc::-webkit-scrollbar-thumb{background:var(--fog);border-radius:2px}
+.nav{display:flex;border-top:1px solid var(--fog);background:var(--ink);padding:10px 8px 18px}
+.nav button{flex:1;background:transparent;color:var(--paper-45);font-size:11px;letter-spacing:.06em;text-transform:uppercase;display:flex;flex-direction:column;align-items:center;gap:5px;padding:4px 0}
+.nav button svg{width:22px;height:22px}
+.nav button.on{color:var(--orange)}
+
+.m-h1{font-size:34px;line-height:1;margin:6px 0 10px}
+.m-h2{font-size:22px;line-height:1.05;margin:16px 0 8px}
+.m-sub{color:var(--paper-70);font-size:14px}
+.m-lbl{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--paper-45);font-weight:700}
+.btn{display:block;width:100%;padding:15px;font-size:15px;letter-spacing:.02em;margin-top:12px}
+.btn.p{background:var(--orange);color:var(--void)}
+.btn.g{background:var(--ink2);color:var(--paper);border:1px solid var(--fog)}
+.btn:disabled{opacity:.4;cursor:default}
+.field{margin-top:12px}
+.field label{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--paper-45);font-weight:700;margin-bottom:5px}
+.field input,.field select{width:100%;background:var(--ink);border:1px solid var(--fog);color:var(--paper);padding:12px;border-radius:8px;font-family:inherit;font-weight:600;font-size:15px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{background:var(--ink);border:1px solid var(--fog);border-radius:12px;padding:14px;margin-top:12px}
+.card.hi{border-color:var(--orange);background:linear-gradient(180deg,rgba(255,90,0,.18),rgba(255,90,0,.04))}
+.kpi{font-family:var(--display);font-size:36px;line-height:1;color:var(--paper);font-variant-numeric:tabular-nums}
+.kpi.o{color:var(--orange)}.kpi.c{color:var(--cobalt)}
+.kpi small{font-family:var(--body);font-size:13px;color:var(--paper-45);font-weight:600;text-transform:none;margin-left:6px}
+.kpis{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+.kpis .card{margin:0;padding:12px 10px}
+.kpis .kpi{font-size:24px}
+.pill{display:inline-block;padding:3px 9px;border-radius:99px;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.pill.ok{background:rgba(34,197,94,.15);color:var(--ok)}.pill.warn{background:rgba(251,191,36,.15);color:var(--warn)}.pill.err{background:rgba(239,68,68,.15);color:var(--err)}.pill.c{background:var(--cobalt-soft);color:#8FA2FF}.pill.o{background:var(--orange-soft);color:var(--orange)}
+.list{margin-top:8px}
+.li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--fog)}
+.li:last-child{border-bottom:0}
+.li .t{font-weight:600}.li .d{font-size:12.5px;color:var(--paper-45)}
+.li .v{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--paper-70);margin-top:14px}
+.check .bx{width:20px;height:20px;border:2px solid var(--orange);border-radius:5px;flex:none;background:var(--orange);position:relative}
+.check .bx:after{content:"";position:absolute;left:6px;top:2px;width:5px;height:10px;border:solid var(--void);border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.bar{height:8px;background:var(--fog);border-radius:4px;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;background:var(--orange);border-radius:4px}
+.map{position:relative;height:150px;border-radius:10px;overflow:hidden;background:var(--ink);border:1px solid var(--fog);margin-top:12px}
+.map .mapimg,.smap .mapimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.map svg,.smap svg{position:absolute;inset:0;width:100%;height:100%}
+.map svg{width:100%;height:100%;display:block}
+.upload{border:2px dashed var(--fog2);border-radius:10px;padding:18px;text-align:center;color:var(--paper-45);font-size:13px;margin-top:12px}
+.slots{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
+.slot{background:var(--ink);border:1px solid var(--fog);color:var(--paper);padding:10px 6px;font-size:13px;text-align:center;border-radius:8px}
+.slot.on{border-color:var(--orange);background:var(--orange-soft)}
+.slot b{display:block;font-family:var(--display);font-size:17px;letter-spacing:.02em}
+.ring{width:118px;height:118px;margin:6px auto 0;position:relative}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--display);font-size:30px;line-height:1}
+.ring .c small{font-family:var(--body);font-size:11px;color:var(--paper-45);font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.note{font-size:12.5px;color:var(--paper-45);margin-top:10px}
+.chart{margin-top:10px}
+.chart svg{width:100%;display:block;overflow:visible}
+
+/* car picker */
+.carstage{background:radial-gradient(ellipse at 50% 90%,rgba(255,90,0,.18),transparent 60%),var(--ink);border:1px solid var(--fog);border-radius:14px;padding:6px 6px 4px;margin-top:12px;position:relative}
+.carstage svg{width:100%;display:block}
+.car3d{width:100%;height:226px;position:relative;cursor:grab;touch-action:none;border-radius:10px;overflow:hidden;background:radial-gradient(ellipse 70% 55% at 50% 22%,rgba(255,90,0,.26),transparent 70%),linear-gradient(180deg,#1A1A1A 0%,#0C0C0C 58%,#050505 100%)}
+.car3d:active{cursor:grabbing}
+.car3d canvas{display:block;width:100%!important;height:100%!important}
+.car3d img{display:block;width:100%;height:100%;object-fit:contain;object-position:center 50%}
+.car3d .ld{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--paper-45);pointer-events:none}
+.car3d .hint{position:absolute;right:8px;bottom:6px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--paper-45);pointer-events:none}
+.carstage .wm{position:absolute;left:12px;top:10px;font-size:13px;pointer-events:none;opacity:.9}
+.logo.sm{font-size:18px}.logo.sm .f{-webkit-text-stroke:1px var(--paper)}
+.logo.xs{font-size:13px}.logo.xs .f{-webkit-text-stroke:.8px var(--paper)}
+.appbar{display:flex;justify-content:space-between;align-items:center;padding:2px 18px 0;height:34px}
+.appbar .avatar{border-width:2px}
+.avatar.xs{width:28px;height:28px;font-size:11px;border-width:2px}
+.sf{display:inline-flex;align-items:center;justify-content:center;font-family:var(--display);font-size:12px;letter-spacing:.02em;width:26px;height:26px;border-radius:7px;background:var(--void);border:1.5px solid var(--orange);color:var(--orange);flex:none}
+.sf .o{color:var(--orange)}.sf .w{color:transparent;-webkit-text-stroke:.7px var(--paper)}
+.brandline{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--paper-45);margin-top:14px;padding-top:12px;border-top:1px solid var(--fog)}
+.brandline .logo{font-size:14px}
+.carstage .cap{display:flex;justify-content:space-between;align-items:center;padding:4px 6px 6px;font-size:12.5px;color:var(--paper-45)}
+.carstage .cap b{color:var(--paper);font-weight:700}
+.swatches{display:grid;grid-template-columns:repeat(6,1fr);gap:22px 8px;margin-top:8px}
+.sw{aspect-ratio:1;border-radius:50%;border:2px solid var(--fog2);position:relative;padding:0;background:var(--c)}
+.sw.on{border-color:var(--orange);box-shadow:0 0 0 2px var(--void),0 0 0 4px var(--orange)}
+.sw span{position:absolute;left:50%;top:calc(100% + 3px);transform:translateX(-50%);font-size:9.5px;color:var(--paper-45);white-space:nowrap;font-weight:600}
+.swatches{margin-bottom:18px}
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.seg button{background:var(--ink);border:1px solid var(--fog);color:var(--paper-70);padding:7px 11px;border-radius:99px;font-size:12.5px}
+.seg button.on{border-color:var(--orange);color:var(--orange);background:var(--orange-soft)}
+
+/* shop map */
+.smap{position:relative;height:230px;border-radius:12px;overflow:hidden;background:#111;border:1px solid var(--fog);margin-top:12px}
+.smap svg{width:100%;height:100%;display:block}
+.pin{cursor:pointer}
+.shop{display:flex;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--fog);cursor:pointer}
+.shop:last-child{border-bottom:0}
+.shop .n{width:26px;height:26px;border-radius:50%;background:var(--fog);color:var(--paper);font-family:var(--display);font-size:14px;display:flex;align-items:center;justify-content:center;flex:none}
+.shop.on .n{background:var(--orange);color:var(--void)}
+.shop .t{font-weight:700}.shop .d{font-size:12.5px;color:var(--paper-45)}
+.shop .r{margin-left:auto;text-align:right;font-size:12.5px;white-space:nowrap}
+.shop .r b{display:block;color:var(--paper);font-weight:700}
+.offers{margin-top:10px}
+.offer{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--fog);border-radius:10px;margin-bottom:8px;cursor:pointer;background:var(--ink)}
+.offer.on{border-color:var(--orange);background:var(--orange-soft)}
+.offer .sw{width:34px;height:34px;border-radius:9px;flex:none}
+.offer .t{font-weight:700}.offer .d{font-size:12.5px;color:var(--paper-45)}
+.offer .p{margin-left:auto;text-align:right;font-family:var(--display);font-size:19px;color:var(--orange);white-space:nowrap}
+.offer .p small{display:block;font-family:var(--body);font-size:10.5px;color:var(--paper-45);font-weight:400;letter-spacing:0}
+.stars{color:var(--warn);letter-spacing:-1px}
+
+/* profile */
+.avatar{width:96px;height:96px;border-radius:50%;background:var(--ink2);border:3px solid var(--orange);overflow:hidden;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:34px;color:var(--orange);position:relative;flex:none}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.avatar.sm{width:40px;height:40px;font-size:16px;border-width:2px}
+.avatar.md{width:56px;height:56px;font-size:22px;border-width:2px}
+.prohead{display:flex;gap:14px;align-items:center;margin-top:8px}
+.prohead .who{min-width:0}
+.prohead .who b{display:block;font-size:19px;font-weight:700}
+.prohead .who span{font-size:13px;color:var(--paper-45)}
+.camrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.camrow label,.camrow button{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--ink2);border:1px solid var(--fog);color:var(--paper);padding:11px 8px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;text-align:center}
+.camrow label svg,.camrow button svg{width:18px;height:18px;flex:none}
+.camrow input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.tog{width:42px;height:24px;border-radius:12px;background:var(--fog2);position:relative;flex:none}
+.tog:after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--paper)}
+.tog.on{background:var(--ok)}.tog.on:after{left:21px}
+
+/* browser frame */
+.browser{background:var(--ink);border:1px solid var(--fog2);border-radius:14px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.bbar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#000;border-bottom:1px solid var(--fog)}
+.bbar .dots{display:flex;gap:6px}.bbar .dots i{width:10px;height:10px;border-radius:50%;background:var(--fog2);display:block}
+.bbar .url{flex:1;background:var(--ink);border-radius:6px;padding:6px 12px;font-size:12.5px;color:var(--paper-45)}
+.bbody{display:grid;grid-template-columns:200px minmax(0,1fr);min-height:600px}
+@media (max-width:700px){.bbody{grid-template-columns:1fr}.side{display:none}}
+.side{background:#000;padding:18px 14px;border-right:1px solid var(--fog)}
+.side .logo{font-size:22px;margin-bottom:22px}
+.side .it{display:block;width:100%;text-align:left;background:transparent;color:var(--paper-45);padding:10px 12px;font-size:13.5px;letter-spacing:.02em;margin-bottom:2px}
+.side .it.on{background:var(--orange-soft);color:var(--orange)}
+.side .acct{margin-top:26px;padding-top:14px;border-top:1px solid var(--fog);font-size:12.5px;color:var(--paper-45)}
+.side .acct b{display:block;color:var(--paper)}
+.content{padding:22px 24px 28px;min-width:0}
+.ch{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.ch h2{font-size:30px;line-height:1}
+.ch .sub{color:var(--paper-45);font-size:13.5px;margin-top:4px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.grid2{grid-template-columns:1fr}}
+.dk{margin-top:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.chip{background:var(--ink2);border:1px solid var(--fog);color:var(--paper-70);padding:6px 10px;border-radius:99px;font-size:12.5px}
+.chip.on{border-color:var(--orange);color:var(--orange);background:var(--orange-soft)}
+.pk{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--fog);border-radius:10px;margin-top:8px;background:var(--ink2);cursor:pointer}
+.pk.on{border-color:var(--cobalt);background:var(--cobalt-soft)}
+.pk .bx{width:20px;height:20px;border:2px solid var(--fog2);border-radius:5px;flex:none;margin-top:2px;position:relative}
+.pk.on .bx{background:var(--cobalt);border-color:var(--cobalt)}
+.pk.on .bx:after{content:"";position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.pk .t{font-weight:700}.pk .d{font-size:12.5px;color:var(--paper-45)}.pk .pr{margin-left:auto;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.calc .li{padding:9px 0}
+.calc .tot{border-top:2px solid var(--orange);margin-top:6px;padding-top:10px}
+.calc .tot .v{font-family:var(--display);font-size:24px;color:var(--orange)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:10px}
+th{text-align:left;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--paper-45);padding:8px 8px;border-bottom:1px solid var(--fog);font-weight:700}
+td{padding:10px 8px;border-bottom:1px solid var(--fog);font-variant-numeric:tabular-nums;vertical-align:middle}
+tr.sel td{background:var(--orange-soft)}
+.tbl{overflow-x:auto}
+.score{display:inline-block;min-width:38px;text-align:center;font-family:var(--display);font-size:15px;padding:3px 6px;border-radius:5px;background:var(--cobalt-soft);color:#8FA2FF}
+.kpirow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:900px){.kpirow{grid-template-columns:1fr 1fr}}
+.kpirow .card{margin:0}
+.kpirow .kpi{font-size:30px}
+.kpirow .m-lbl{display:block;margin-bottom:6px}
+.heat{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:10px}
+.heat div{aspect-ratio:1.6;border-radius:4px;display:flex;align-items:flex-end;padding:4px;font-size:10.5px;font-weight:700;color:var(--paper)}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--paper-45);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.btnrow .btn{width:auto;margin:0;padding:12px 18px}
+.toast{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ok);color:var(--void);padding:10px 16px;border-radius:8px;font-weight:700;font-size:13px;white-space:nowrap;z-index:9;max-width:90%;overflow:hidden;text-overflow:ellipsis}
+
+.arch{background:var(--ink);border:1px solid var(--fog);border-radius:14px;padding:24px}
+.arch h2{font-size:30px;margin-bottom:6px}
+.arch .lead{color:var(--paper-70);max-width:70ch;margin-bottom:22px}
+.diag{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:12px;align-items:stretch}
+@media (max-width:900px){.diag{grid-template-columns:1fr}.diag .arrow{transform:rotate(90deg);justify-self:center}}
+.box{border:1px solid var(--fog);border-radius:12px;padding:16px;background:var(--void)}
+.box.core{border-color:var(--orange);background:linear-gradient(180deg,rgba(255,90,0,.16),rgba(255,90,0,.03))}
+.box h3{font-size:22px;margin-bottom:4px}
+.box .tag{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--paper-45);font-weight:700;margin-bottom:10px}
+.box ul{margin:0;padding-left:16px;font-size:13.5px;color:var(--paper-70)}
+.box li{margin-bottom:4px}
+.arrow{align-self:center;color:var(--orange);font-family:var(--display);font-size:28px}
+.scope{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:22px}
+@media (max-width:760px){.scope{grid-template-columns:1fr}}
+.scope .box h3{font-size:18px}
+.scope .box h3 .pill{vertical-align:middle;margin-left:8px}
+.stack{margin-top:22px}
+.stack td:first-child{font-weight:700;white-space:nowrap}
+.stack td:nth-child(2){color:var(--paper-70)}
+</style>
+
+<div class="wrap">
+  <button id="kioskExit" class="kiosk-exit" title="App-Modus verlassen">×</button>
+  <header class="top">
+    <div class="logo"><span class="s">STREET</span><span class="f">FLOW</span></div>
+    <div class="meta kioskhide"><b>MVP Prototyp</b> · Klickdummy · Alle Zahlen sind Beispielwerte · <a href="?app=1" id="kioskEnter" style="color:var(--orange);text-decoration:none">Vollbild-App-Modus</a></div>
+  </header>
+  <nav class="tabs" id="tabs">
+    <button class="tab" data-side="driver"><span class="n">01</span> Fahrer-App</button>
+    <button class="tab" data-side="customer"><span class="n">02</span> Kunden-Portal</button>
+    <button class="tab" data-side="ops"><span class="n">03</span> Backoffice</button>
+    <button class="tab" data-side="arch"><span class="n">04</span> Aufbau &amp; Scope</button>
+  </nav>
+  <div class="main">
+    <section class="stage"><div class="steps" id="steps"></div><div id="stage"></div></section>
+    <aside class="panel" id="panel"></aside>
+  </div>
+</div>
+
+<!-- Live-3D-Vorschau entfernt: lädt nicht zuverlässig. Ersatz durch zwei Referenzfotos (unfoliert / Testkampagne), siehe car3d(). -->
+<script>
+const ic = {
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"/></svg>',
+  route:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h6a4 4 0 0 0 0-8H10a4 4 0 0 1 0-8h6"/></svg>',
+  euro:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6a7 7 0 0 0-11 2M18 18a7 7 0 0 1-11-2M4 10h10M4 14h10"/></svg>',
+  user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+  cam:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+  img:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>'
+};
+const nf = n => n.toLocaleString('de-DE');
+const eur = n => n.toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:0})+' €';
+
+/* ---------- car catalogue ---------- */
+const CARS = {
+ 'Audi':[['A1','kompakt'],['A3','kompakt'],['A4','limousine'],['A4 Avant','kombi'],['A6 Avant','kombi'],['Q2','suv'],['Q3','suv'],['Q5','suv'],['e-tron','suv']],
+ 'BMW':[['1er','kompakt'],['2er Active Tourer','van'],['3er','limousine'],['3er Touring','kombi'],['5er','limousine'],['7er','limousine'],['X1','suv'],['X3','suv'],['i3','kompakt'],['iX1','suv']],
+ 'Citroën':[['C3','kompakt'],['C4','kompakt'],['C5 Aircross','suv'],['Berlingo','van'],['ë-C4','kompakt']],
+ 'Cupra':[['Born','kompakt'],['Formentor','suv'],['Leon','kompakt'],['Ateca','suv']],
+ 'Dacia':[['Sandero','kompakt'],['Duster','suv'],['Jogger','van'],['Spring','kompakt']],
+ 'Fiat':[['500','kompakt'],['500e','kompakt'],['Panda','kompakt'],['Tipo','kompakt'],['Doblò','van']],
+ 'Ford':[['Fiesta','kompakt'],['Focus','kompakt'],['Focus Turnier','kombi'],['Puma','suv'],['Kuga','suv'],['Mustang Mach-E','suv'],['Transit Custom','transporter']],
+ 'Honda':[['Jazz','kompakt'],['Civic','kompakt'],['HR-V','suv'],['CR-V','suv']],
+ 'Hyundai':[['i10','kompakt'],['i20','kompakt'],['i30','kompakt'],['i30 Kombi','kombi'],['Kona','suv'],['Tucson','suv'],['Ioniq 5','suv']],
+ 'Kia':[['Picanto','kompakt'],['Ceed','kompakt'],['Ceed SW','kombi'],['XCeed','suv'],['Sportage','suv'],['Niro','suv'],['EV6','suv']],
+ 'Mazda':[['2','kompakt'],['3','kompakt'],['CX-30','suv'],['CX-5','suv'],['MX-30','suv']],
+ 'Mercedes-Benz':[['A-Klasse','kompakt'],['B-Klasse','van'],['C-Klasse','limousine'],['C-Klasse T-Modell','kombi'],['E-Klasse','limousine'],['GLA','suv'],['GLC','suv'],['EQA','suv'],['Vito','transporter']],
+ 'Mini':[['Cooper 3-Türer','kompakt'],['Cooper 5-Türer','kompakt'],['Countryman','suv'],['Clubman','kombi']],
+ 'Nissan':[['Micra','kompakt'],['Juke','suv'],['Qashqai','suv'],['Leaf','kompakt'],['Ariya','suv']],
+ 'Opel':[['Corsa','kompakt'],['Astra','kompakt'],['Astra Sports Tourer','kombi'],['Mokka','suv'],['Grandland','suv'],['Combo','van'],['Vivaro','transporter']],
+ 'Peugeot':[['208','kompakt'],['308','kompakt'],['308 SW','kombi'],['2008','suv'],['3008','suv'],['5008','suv'],['Rifter','van']],
+ 'Renault':[['Clio','kompakt'],['Captur','suv'],['Mégane','kompakt'],['Mégane E-Tech','suv'],['Austral','suv'],['Kangoo','van'],['Trafic','transporter']],
+ 'Seat':[['Ibiza','kompakt'],['Leon','kompakt'],['Leon Sportstourer','kombi'],['Arona','suv'],['Ateca','suv']],
+ 'Škoda':[['Fabia','kompakt'],['Scala','kompakt'],['Octavia','limousine'],['Octavia Combi','kombi'],['Kamiq','suv'],['Karoq','suv'],['Kodiaq','suv'],['Enyaq','suv']],
+ 'Tesla':[['Model 3','limousine'],['Model Y','suv'],['Model S','limousine']],
+ 'Toyota':[['Aygo X','kompakt'],['Yaris','kompakt'],['Yaris Cross','suv'],['Corolla','kompakt'],['Corolla Touring Sports','kombi'],['C-HR','suv'],['RAV4','suv'],['Proace','transporter']],
+ 'Volkswagen':[['up!','kompakt'],['Polo','kompakt'],['Golf','kompakt'],['Golf Variant','kombi'],['ID.3','kompakt'],['ID.4','suv'],['T-Roc','suv'],['Tiguan','suv'],['Passat Variant','kombi'],['Touran','van'],['Transporter T6.1','transporter']],
+ 'Volvo':[['XC40','suv'],['XC60','suv'],['V60','kombi'],['EX30','suv']]
+};
+const COLORS = [['Weiß','#EDEDED'],['Schwarz','#1C1C1C'],['Silber','#B9BEC4'],['Grau','#6E7378'],['Anthrazit','#3B3F44'],['Rot','#C4262E'],['Dunkelblau','#1F2F6B'],['Blau','#2B6BD6'],['Grün','#2E7D4F'],['Gelb','#E8C11C'],['Orange','#E8712A'],['Braun','#6B4A2E'],['Beige','#CDBFA3'],['Bordeaux','#6E1E2E'],['Türkis','#2AA6A0'],['Bronze','#9C7A4B'],['Champagner','#D8CDAE'],['Mattgrau','#54595E']];
+const BODIES = {kompakt:'Kompakt / Kleinwagen', limousine:'Limousine', kombi:'Kombi', suv:'SUV', van:'Van / Hochdach', transporter:'Transporter'};
+
+/* car silhouettes: side view, viewBox 0 0 340 130, wrap = show motiv */
+function carSvg(body, hex, wrap){
+  const dark = ['#1C1C1C','#3B3F44','#1F2F6B','#6E1E2E','#54595E','#6B4A2E'].includes(hex);
+  const stroke = dark ? '#5A5E63' : 'rgba(0,0,0,.35)';
+  const win = '#0E1A2E';
+  const shapes = {
+    kompakt:{ body:'M28 96 L40 66 Q50 44 82 42 L172 40 Q215 40 248 66 L296 74 Q316 80 314 96 Z', win:['M90 44 L100 66 L48 66 Q58 47 90 44Z','M110 43 L118 66 L218 66 Q200 45 172 42Z'], wheels:[86,258], door:[62,66,60,30], rear:[126,66,96,30] },
+    limousine:{ body:'M18 96 L34 68 Q44 50 72 47 L150 44 Q200 44 236 62 L306 74 Q328 80 326 96 Z', win:['M84 49 L96 68 L42 68 Q52 52 84 49Z','M108 47 L118 68 L228 68 Q205 50 150 47Z'], wheels:[76,268], door:[54,68,60,28], rear:[118,68,98,28] },
+    kombi:{ body:'M22 96 L34 64 Q44 46 72 44 L212 40 Q262 40 288 62 L306 74 Q328 80 326 96 Z', win:['M84 47 L96 66 L42 66 Q52 50 84 47Z','M108 46 L118 66 L200 66 L198 44Z','M212 44 L214 66 L284 66 Q262 46 212 44Z'], wheels:[76,268], door:[54,66,60,28], rear:[118,66,80,28] },
+    suv:{ body:'M20 98 L30 60 Q40 40 70 38 L220 36 Q262 36 286 58 L308 72 Q330 80 328 98 Z', win:['M82 42 L94 62 L40 62 Q50 44 82 42Z','M106 41 L116 62 L204 62 L202 40Z','M216 40 L218 62 L282 62 Q262 42 216 40Z'], wheels:[76,268], door:[52,62,62,32], rear:[116,62,84,32] },
+    van:{ body:'M20 98 L28 54 Q34 34 64 32 L236 30 Q272 30 292 54 L310 72 Q330 80 328 98 Z', win:['M76 36 L88 58 L36 58 Q44 38 76 36Z','M100 35 L108 58 L196 58 L194 34Z','M208 34 L210 58 L288 58 Q268 36 208 34Z'], wheels:[74,270], door:[46,58,64,36], rear:[110,58,82,36] },
+    transporter:{ body:'M16 98 L22 44 Q26 30 50 30 L120 28 L124 30 L318 30 Q332 30 332 44 L332 98 Z', win:['M56 34 L64 60 L28 60 Q32 36 56 34Z','M74 34 L82 60 L118 60 L116 33Z'], wheels:[66,276], door:[40,60,72,34], rear:[124,40,200,54] }
+  };
+  const s = shapes[body] || shapes.kompakt;
+  const wrapLayer = wrap ? `
+    <rect x="${s.door[0]}" y="${s.door[1]+2}" width="${s.door[2]}" height="${s.door[3]-4}" rx="3" fill="#FF5A00"/>
+    <rect x="${s.rear[0]}" y="${s.rear[1]+2}" width="${s.rear[2]}" height="${s.rear[3]-4}" rx="3" fill="#FF5A00"/>
+    <text x="${s.rear[0]+8}" y="${s.rear[1]+s.rear[3]/2+6}" font-family="Anton" font-size="${Math.min(18, s.rear[2]/6.2)}" fill="#0A0A0A">RUHRSTROM</text>
+    <text x="${s.door[0]+6}" y="${s.door[1]+s.door[3]/2+5}" font-family="Anton" font-size="12" fill="#0A0A0A">ÖKOSTROM</text>` : '';
+  return `<svg viewBox="0 0 340 130">
+    <ellipse cx="170" cy="112" rx="150" ry="8" fill="#000" opacity=".45"/>
+    <path d="${s.body}" fill="${hex}" stroke="${stroke}" stroke-width="2"/>
+    ${s.win.map(w=>`<path d="${w}" fill="${win}" stroke="${stroke}" stroke-width="1"/>`).join('')}
+    ${wrapLayer}
+    ${s.wheels.map(x=>`<circle cx="${x}" cy="98" r="17" fill="#0A0A0A" stroke="#3A3A38" stroke-width="3"/><circle cx="${x}" cy="98" r="7" fill="#2E2E2C"/>`).join('')}
+  </svg>`;
+}
+
+/* ---------- 3D car (Three.js + glTF) ---------- */
+const LOGO = `<span class="s">STREET</span><span class="f">FLOW</span>`;
+const renderers = [];
+let carGltf = null, carPromise = null, pmremEnv = null;
+function loadCar(){
+  if(carPromise) return carPromise;
+  carPromise = new Promise((res, rej)=>{
+    const loader = new THREE.GLTFLoader();
+    if(window.MeshoptDecoder) loader.setMeshoptDecoder(window.MeshoptDecoder);
+    const b64 = window.CAR_GLB_B64; if(!b64) return rej(new Error('no model'));
+    const bin = atob(b64), buf = new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) buf[i] = bin.charCodeAt(i);
+    loader.parse(buf.buffer, '', g=>{ carGltf = g; res(g); }, rej);
+  });
+  return carPromise;
+}
+/* Referenzkampagnen (Demozwecke, Markenname/-design jeweils nur als Platzhaltermotiv): jede zeigt ein echtes Freisteller-Foto des BMW 7er in der jeweiligen Folierung. */
+/* Vergütung je Angebot = Hälfte des Mediawerts (Kontakte × Kunden-TKP / 1000), auf 10 € gerundet. TKP variiert leicht je Kunde/Laufzeit, Basis ist der Essener Stadtfahrer mit 38.400 Kontakten/Monat und TKP 8,00 €. */
+const CAMPAIGNS = [
+  {name:'Sprite', branche:'Erfrischungsgetränk', photo:'sprite', bg:'#1E7A3C', fg:'#F5F5F5', ac:'#C9E23A', pay:150, dauer:6}, /* TKP 8,00 € */
+  {name:'Haribo', branche:'Süßwaren', photo:'haribo', bg:'#1E3A8A', fg:'#F5F5F5', ac:'#E11D2E', pay:140, dauer:6}, /* TKP 7,40 € */
+  {name:'iPhone 16 (Apple)', branche:'Elektronik', photo:'iphone16', bg:'#1A1A1A', fg:'#F5F5F5', ac:'#C79A5B', pay:180, dauer:9}, /* TKP 9,20 €, längere Laufzeit */
+  {name:'Aldi', branche:'Lebensmittelhandel', photo:'aldi', bg:'#0F2E82', fg:'#F5F5F5', ac:'#FF8A00', pay:130, dauer:6} /* TKP 7,00 € */
+];
+function drawIcon(g, kind, x, y, r, color){
+  g.save(); g.translate(x,y); g.fillStyle = color; g.strokeStyle = color; g.lineWidth = r*0.18; g.lineCap='round'; g.lineJoin='round';
+  if(kind==='bolt'){ g.beginPath(); g.moveTo(r*0.15,-r); g.lineTo(-r*0.55,r*0.1); g.lineTo(-r*0.05,r*0.1); g.lineTo(-r*0.2,r); g.lineTo(r*0.6,-r*0.15); g.lineTo(r*0.08,-r*0.15); g.closePath(); g.fill(); }
+  else if(kind==='cup'){ g.beginPath(); g.roundRect(-r*0.75,-r*0.4,r*1.3,r*1.1,r*0.15); g.fill(); g.beginPath(); g.arc(r*0.65,r*0.1,r*0.32,-Math.PI/2,Math.PI/2); g.stroke(); g.beginPath(); for(const dx of [-r*0.4,-r*0.1,r*0.2]){ g.moveTo(dx,-r*0.95); g.quadraticCurveTo(dx+r*0.15,-r*0.75,dx,-r*0.55);} g.stroke(); }
+  else { g.beginPath(); g.moveTo(-r*0.5,0); g.lineTo(r*0.5,0); g.stroke(); for(const sx of [-1,1]){ g.beginPath(); g.roundRect(sx*r*0.5-r*0.18,-r*0.5,r*0.36,r,r*0.08); g.fill(); g.beginPath(); g.roundRect(sx*r*0.85-r*0.12,-r*0.32,r*0.24,r*0.64,r*0.06); g.fill(); } }
+  g.restore();
+}
+function motifTexture(c, kind){
+  const cv = document.createElement('canvas'); const W = kind==='side' ? 2048 : 1024, H = kind==='side' ? 640 : 1024; cv.width=W; cv.height=H; const g = cv.getContext('2d');
+  g.fillStyle = c.bg; g.fillRect(0,0,W,H);
+  /* accent sweep */
+  g.save(); g.globalAlpha = 0.16; g.fillStyle = c.ac; g.beginPath(); g.moveTo(W*0.62,0); g.lineTo(W,0); g.lineTo(W,H); g.lineTo(W*0.48,H); g.closePath(); g.fill(); g.restore();
+  g.save(); g.globalAlpha = 0.35; g.strokeStyle = c.ac; g.lineWidth = 6; for(let i=0;i<4;i++){ g.beginPath(); g.moveTo(W*0.55+i*40, H); g.lineTo(W*0.70+i*40, 0); g.stroke(); } g.restore();
+  g.textAlign='left'; g.textBaseline='alphabetic';
+  if(kind==='side'){
+    drawIcon(g, c.icon, 150, H*0.42, 110, c.ac);
+    g.fillStyle = c.fg; g.font = '900 210px Anton, Impact, sans-serif'; g.fillText(c.name.toUpperCase(), 300, H*0.52);
+    g.font = '700 74px Barlow, Arial, sans-serif'; g.fillText(c.claim, 306, H*0.52+96);
+    g.font = '600 44px Barlow, Arial, sans-serif'; g.globalAlpha=.85; g.fillText(c.url, 306, H*0.52+160); g.globalAlpha=1;
+  } else {
+    drawIcon(g, c.icon, W/2, H*0.36, 200, c.ac);
+    g.textAlign='center'; g.fillStyle = c.fg; g.font = '900 150px Anton, Impact, sans-serif'; g.fillText(c.name.toUpperCase(), W/2, H*0.72);
+    g.font = '700 56px Barlow, Arial, sans-serif'; g.fillText(c.claim, W/2, H*0.72+80);
+  }
+  /* StreetFlow tag */
+  g.textAlign='right'; g.font = '900 46px Anton, Impact, sans-serif'; g.fillStyle = c.fg; g.globalAlpha=.9; g.fillText('STREET', W-96, H-34); g.lineWidth=2; g.strokeStyle=c.fg; g.strokeText('FLOW', W-24, H-34); g.globalAlpha=1;
+  const t = new THREE.CanvasTexture(cv); t.anisotropy = 8; t.encoding = THREE.sRGBEncoding; return t;
+}
+const liveCars = [], carCache = {};
+function makePaint(hex){
+  const metallic = ['#B9BEC4','#6E7378','#3B3F44','#9C7A4B','#54595E','#D8CDAE','#1F2F6B','#2E7D4F','#6E1E2E','#2B6BD6','#2AA6A0'].includes(hex);
+  return new THREE.MeshPhysicalMaterial({color:new THREE.Color(hex).convertSRGBToLinear(), metalness: metallic?0.72:0.22, roughness: metallic?0.34:0.26, clearcoat:1, clearcoatRoughness:0.05, envMapIntensity:1.2});
+}
+function prepCar(gltf, hex, wrap, camp){
+  const root = gltf.scene.clone(true);
+  const paintMat = makePaint(hex), paintMeshes = [];
+  const glassMat = new THREE.MeshPhysicalMaterial({color:new THREE.Color('#0A1422').convertSRGBToLinear(), metalness:0.2, roughness:0.02, transparent:true, opacity:0.82, clearcoat:1, envMapIntensity:1.6});
+  const chrome = new THREE.MeshStandardMaterial({color:'#D3D6DA', metalness:1, roughness:0.18, envMapIntensity:1.3});
+  const rubber = new THREE.MeshStandardMaterial({color:'#0B0B0B', metalness:0, roughness:0.92});
+  const interior = new THREE.MeshStandardMaterial({color:'#17181B', metalness:0, roughness:0.88});
+  const dark = new THREE.MeshStandardMaterial({color:'#222326', metalness:0.35, roughness:0.62});
+  const headlamp = new THREE.MeshPhysicalMaterial({color:'#DDE6EE', metalness:0.3, roughness:0.05, transparent:true, opacity:0.55, emissive:'#FFF2D0', emissiveIntensity:0.9});
+  const taillamp = new THREE.MeshStandardMaterial({color:'#5A0A0A', metalness:0.2, roughness:0.3, emissive:'#FF2A1A', emissiveIntensity:0.85});
+  root.traverse(o=>{
+    if(!o.isMesh) return;
+    const mn = (o.material && o.material.name || '').toLowerCase(), nn = (o.name||'').toLowerCase();
+    let m = dark;
+    if(/carpaint/.test(mn)){ m = paintMat; paintMeshes.push(o); }
+    else if(/window|speed_window/.test(nn) || /^windows$|^20_-_default|^10_-_default/.test(mn)) m = glassMat;
+    else if(/glass_car_reflector/.test(mn) || /turner/.test(nn)) m = headlamp;
+    else if(/light_back$|far_zad/.test(nn) || /^15_-_default$/.test(mn)) m = taillamp;
+    else if(/simple_metal|chrome/.test(mn) || /chrome|obod|disk/.test(nn)) m = chrome;
+    else if(/^black/.test(mn) || /4ern/.test(nn)) m = rubber;
+    else if(/leather/.test(mn)) m = interior;
+    else if(/light/.test(mn)) m = headlamp;
+    o.material = m; o.frustumCulled = false;
+  });
+  const b0 = new THREE.Box3().setFromObject(root); const size0 = b0.getSize(new THREE.Vector3());
+  root.scale.setScalar(4.6 / Math.max(size0.x, size0.z)); root.updateMatrixWorld(true);
+  const b1 = new THREE.Box3().setFromObject(root); const c1 = b1.getCenter(new THREE.Vector3());
+  root.position.set(-c1.x, -b1.min.y, -c1.z); root.updateMatrixWorld(true);
+  const holder = new THREE.Group(); holder.add(root);
+  if(wrap && THREE.DecalGeometry){
+    const b2 = new THREE.Box3().setFromObject(root), sz = b2.getSize(new THREE.Vector3()), c2 = b2.getCenter(new THREE.Vector3());
+    const dm = new THREE.MeshStandardMaterial({map:motifTexture(camp,'side'), transparent:true, depthTest:true, depthWrite:false, polygonOffset:true, polygonOffsetFactor:-4, roughness:0.42, metalness:0.05});
+    const y = b2.min.y + sz.y*0.40, dw = sz.x*0.62, dh = sz.y*0.27;
+    [[1, 0],[-1, Math.PI]].forEach(([side, ry])=>{
+      const pos = new THREE.Vector3(c2.x - sz.x*0.06, y, side>0 ? b2.max.z : b2.min.z);
+      paintMeshes.forEach(mesh=>{ try{ const geo = new THREE.DecalGeometry(mesh, pos, new THREE.Euler(0, ry, 0), new THREE.Vector3(dw, dh, sz.z*0.42)); if(geo.attributes.position.count>0) holder.add(new THREE.Mesh(geo, dm)); }catch(e){} });
+    });
+    const hm = new THREE.MeshStandardMaterial({map:motifTexture(camp,'hood'), transparent:true, depthTest:true, depthWrite:false, polygonOffset:true, polygonOffsetFactor:-4, roughness:0.42});
+    [[1],[-1]].forEach(([end])=>{ const pos = new THREE.Vector3(end>0 ? b2.max.x - sz.x*0.16 : b2.min.x + sz.x*0.16, b2.max.y, c2.z); paintMeshes.forEach(mesh=>{ try{ const geo = new THREE.DecalGeometry(mesh, pos, new THREE.Euler(-Math.PI/2, 0, end>0 ? Math.PI/2 : -Math.PI/2), new THREE.Vector3(sz.z*0.55, sz.z*0.55, sz.y*0.5)); if(geo.attributes.position.count>0) holder.add(new THREE.Mesh(geo, hm)); }catch(e){} }); });
+  }
+  const shadowC = document.createElement('canvas'); shadowC.width=shadowC.height=256; const sg = shadowC.getContext('2d'); const grd = sg.createRadialGradient(128,128,10,128,128,128); grd.addColorStop(0,'rgba(0,0,0,.95)'); grd.addColorStop(0.5,'rgba(0,0,0,.5)'); grd.addColorStop(1,'rgba(0,0,0,0)'); sg.fillStyle=grd; sg.fillRect(0,0,256,256);
+  const sh = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 3.8), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(shadowC), transparent:true, depthWrite:false})); sh.rotation.x=-Math.PI/2; sh.position.set(0,0.006,0); holder.add(sh);
+  holder.userData.paint = paintMat;
+  return holder;
+}
+function setPaint(hex){
+  const target = new THREE.Color(hex).convertSRGBToLinear(), next = makePaint(hex);
+  liveCars.forEach(c=>{ const m = c.userData.paint; if(!m) return; const from = m.color.clone(), t0 = performance.now();
+    (function step(){ const k = Math.min(1,(performance.now()-t0)/420), e = 1-Math.pow(1-k,3); m.color.copy(from).lerp(target, e); m.metalness = m.metalness + (next.metalness-m.metalness)*e; m.roughness = m.roughness + (next.roughness-m.roughness)*e; if(k<1) requestAnimationFrame(step); })(); });
+}
+function mountCars(){
+  renderers.splice(0).forEach(r=>{ try{ r.dispose(); r.forceContextLoss(); }catch(e){} }); liveCars.splice(0);
+  if(!window.THREE) return;
+  document.querySelectorAll('.car3d').forEach(el=>{
+    const W = el.clientWidth || 340, H = el.clientHeight || 226, dpr = Math.min(devicePixelRatio,2);
+    const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true}); renderer.setPixelRatio(dpr); renderer.setSize(W,H);
+    renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
+    el.prepend(renderer.domElement); renderers.push(renderer);
+    const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(24, W/H, 0.1, 80); cam.position.set(5.6, 1.75, 5.8); cam.lookAt(0,0.62,0);
+    if(!pmremEnv && THREE.RoomEnvironment){ pmremEnv = new THREE.PMREMGenerator(renderer).fromScene(new THREE.RoomEnvironment(), 0.04).texture; }
+    if(pmremEnv) scene.environment = pmremEnv;
+    const key = new THREE.DirectionalLight('#ffffff',1.4); key.position.set(3,8,4); scene.add(key);
+    const rim = new THREE.DirectionalLight('#FF5A00',0.6); rim.position.set(-6,3,-5); scene.add(rim);
+    const cool = new THREE.DirectionalLight('#8FA2FF',0.35); cool.position.set(-3,4,6); scene.add(cool);
+    scene.add(new THREE.AmbientLight('#ffffff',0.18));
+    /* mirror floor with dark fade */
+    if(THREE.Reflector){ const fl = new THREE.Reflector(new THREE.PlaneGeometry(18,18), {clipBias:0.003, textureWidth:W*dpr, textureHeight:H*dpr, color:0x3a3a3a}); fl.rotation.x = -Math.PI/2; scene.add(fl); }
+    const fc = document.createElement('canvas'); fc.width=fc.height=256; const fg = fc.getContext('2d'); const fgr = fg.createRadialGradient(128,128,40,128,128,128); fgr.addColorStop(0,'rgba(8,8,8,.35)'); fgr.addColorStop(0.55,'rgba(8,8,8,.85)'); fgr.addColorStop(1,'rgba(8,8,8,1)'); fg.fillStyle=fgr; fg.fillRect(0,0,256,256);
+    const fade = new THREE.Mesh(new THREE.PlaneGeometry(18,18), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(fc), transparent:true, depthWrite:false})); fade.rotation.x=-Math.PI/2; fade.position.y=0.003; scene.add(fade);
+    const pivot = new THREE.Group(); scene.add(pivot);
+    let rot = 0.8, drag = false, lastX = 0, auto = true, alive = true, vel = 0;
+    el.addEventListener('pointerdown', e=>{ drag=true; auto=false; lastX=e.clientX; el.setPointerCapture(e.pointerId); });
+    el.addEventListener('pointermove', e=>{ if(drag){ const d=(e.clientX-lastX)*0.012; rot += d; vel = d; lastX=e.clientX; } });
+    el.addEventListener('pointerup', ()=>{ drag=false; setTimeout(()=>auto=true, 2200); });
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const camp = CAMPAIGNS[+el.dataset.camp||0];
+    loadCar().then(g=>{ if(!renderer.domElement.isConnected) return;
+      const key = (el.dataset.wrap==='1' ? 'w'+el.dataset.camp : 'n'); let car = carCache[key];
+      if(car){ if(car.parent) car.parent.remove(car); const np = makePaint(el.dataset.hex), pm = car.userData.paint; pm.color.copy(np.color); pm.metalness = np.metalness; pm.roughness = np.roughness; }
+      else { car = prepCar(g, el.dataset.hex, el.dataset.wrap==='1', camp); carCache[key] = car; }
+      car.scale.setScalar(0.001); pivot.add(car); liveCars.push(car); const ld = el.querySelector('.ld'); if(ld) ld.remove();
+      const t0 = performance.now(); (function grow(){ const k=Math.min(1,(performance.now()-t0)/650), e=1-Math.pow(1-k,3); car.scale.setScalar(0.001+0.999*e); car.position.y = (1-e)*0.35; if(k<1) requestAnimationFrame(grow); })(); }).catch(()=>{ const ld = el.querySelector('.ld'); if(ld) ld.textContent='Modell konnte nicht geladen werden'; });
+    (function loop(){ if(!alive || !renderer.domElement.isConnected){ alive=false; return; } if(!drag){ vel *= 0.9; rot += vel; } if(auto && !reduce) rot += 0.0032; pivot.rotation.y = rot; renderer.render(scene, cam); requestAnimationFrame(loop); })();
+  });
+}
+/* Statisches Referenzfoto statt Live-3D: BMW 7er, unfoliert vs. jeweils ausgewählte Testkampagne (freigestellt, auf StreetFlow-Studiobühne montiert). */
+const car3d = (wrap) => { const photo = wrap ? CAMPAIGNS[state.campaign].photo : 'plain';
+  return `<div class="car3d"><img src="bmw7-${photo}.jpg" alt="BMW 7er${wrap ? ', ' + CAMPAIGNS[state.campaign].name + '-Testfolierung' : ''}" loading="lazy"></div>`; };
+
+/* Kartenausschnitt Essen (echte OSM-Daten, im Prototyp als Bild eingebettet und dunkel eingefärbt), Route Altenessen -> Rüttenscheid */
+const routeSvg = (accent='#FF5A00') => `<img class="mapimg" src="map-route.jpg" alt="Karte Essen, Route Altenessen bis Rüttenscheid" loading="lazy">
+<svg viewBox="0 0 340 150" preserveAspectRatio="none">
+  <path d="M162.9 28.6 C 190 55, 145 95, 177.1 121.4" stroke="${accent}" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <circle cx="162.9" cy="28.6" r="5" fill="${accent}" stroke="#0A0A0A" stroke-width="1.5"/><circle cx="177.1" cy="121.4" r="5" fill="#F5F5F5" stroke="#0A0A0A" stroke-width="1.5"/>
+  <text x="132" y="20" font-size="10" fill="#F5F5F5" font-family="Barlow" font-weight="600">Altenessen</text>
+  <text x="146" y="138" font-size="10" fill="#F5F5F5" font-family="Barlow" font-weight="600">Rüttenscheid</text>
+</svg>`;
+
+/* shops around Altenessen (Koordinaten aus echten Essener Stadtteil-Lagen, siehe map-shops.jpg) */
+const SHOPS = [
+ {n:'Folierung Nord', a:'Altenessener Str. 412', km:1.8, rating:4.8, cnt:112, next:'Di 07.10.', x:136.2,y:86.6, slots:[['Di','07.10.','09:00'],['Mi','08.10.','13:00'],['Fr','10.10.','08:30']]},
+ {n:'CarDesign Borbeck', a:'Bocholder Str. 88', km:4.2, rating:4.6, cnt:64, next:'Do 09.10.', x:60.8,y:113.8, slots:[['Do','09.10.','10:00'],['Sa','11.10.','09:00'],['Mo','13.10.','14:00']]},
+ {n:'WrapWerk Gelsenkirchen', a:'Kurt-Schumacher-Str. 210', km:5.9, rating:4.9, cnt:203, next:'Mi 08.10.', x:279.2,y:22.4, slots:[['Mi','08.10.','08:00'],['Do','09.10.','12:00'],['Sa','11.10.','10:00']]},
+ {n:'Folientechnik Kray', a:'Krayer Str. 156', km:6.4, rating:4.7, cnt:88, next:'Sa 11.10.', x:240.7,y:140.9, slots:[['Sa','11.10.','10:00'],['Di','14.10.','09:00'],['Do','16.10.','13:00']]},
+ {n:'Wrapstudio Rüttenscheid', a:'Rüttenscheider Str. 231', km:7.1, rating:4.5, cnt:141, next:'Fr 10.10.', x:160.8,y:207.6, slots:[['Fr','10.10.','09:00'],['Mo','13.10.','11:00'],['Mi','15.10.','15:00']]}
+];
+function shopMap(){
+  const sel = state.shop;
+  return `<img class="mapimg" src="map-shops.jpg" alt="Karte Essen mit Folierer-Partnerbetrieben">
+  <svg viewBox="0 0 340 230">
+    <text x="112" y="82" font-size="9.5" fill="#F5F5F5" fill-opacity=".7" font-family="Barlow">Altenessen</text>
+    <text x="130" y="222" font-size="9.5" fill="#F5F5F5" fill-opacity=".6" font-family="Barlow">Rüttenscheid</text>
+    <text x="240" y="16" font-size="9.5" fill="#F5F5F5" fill-opacity=".6" font-family="Barlow">Gelsenkirchen</text>
+    <text x="18" y="108" font-size="9.5" fill="#F5F5F5" fill-opacity=".6" font-family="Barlow">Borbeck</text>
+    <circle cx="143.9" cy="96.5" r="4" fill="#2B4EFF"/><circle cx="143.9" cy="96.5" r="9" fill="#2B4EFF" fill-opacity=".25"/>
+    <text x="152" y="100" font-size="9.5" fill="#8FA2FF" font-family="Barlow" font-weight="700">Du</text>
+    ${SHOPS.map((s,i)=>`<g class="pin ${i===sel?'on':''}" data-shop="${i}" style="--px:${s.x}px;--py:${s.y}px" transform="translate(${s.x},${s.y})"><path d="M0 0 C -12 -14, -12 -30, 0 -30 C 12 -30, 12 -14, 0 0Z" fill="${i===sel?'#FF5A00':'#F5F5F5'}" stroke="#0A0A0A" stroke-width="1.5"/><text x="0" y="-15" text-anchor="middle" font-family="Anton" font-size="12" fill="#0A0A0A">${i+1}</text></g>`).join('')}
+  </svg>`;
+}
+
+function bars(vals, color, h=90, labels=[]) {
+  const max = Math.max(...vals), w = 100/vals.length;
+  let s = `<svg viewBox="0 0 100 ${h+16}" preserveAspectRatio="none">`;
+  vals.forEach((v,i)=>{ const bh = v/max*h; s += `<rect x="${i*w+1}" y="${h-bh}" width="${w-2}" height="${bh}" rx="1" fill="${color}" fill-opacity="${i===vals.length-1?1:.55}"/>`; });
+  labels.forEach((l,i)=>{ s += `<text x="${i*w+w/2}" y="${h+12}" font-size="6" text-anchor="middle" fill="#F5F5F5" fill-opacity=".5" font-family="Barlow">${l}</text>`; });
+  return s+'</svg>';
+}
+function line(vals, color, h=110) {
+  const max = Math.max(...vals), n = vals.length;
+  const pts = vals.map((v,i)=>[i/(n-1)*100, h - v/max*h]);
+  const d = pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  return `<svg viewBox="0 0 100 ${h+4}" preserveAspectRatio="none"><g stroke="#2E2E2C" stroke-width=".4">${[0.25,0.5,0.75].map(f=>`<path d="M0 ${h*f}H100"/>`).join('')}</g><path d="${d} L100 ${h} L0 ${h}Z" fill="${color}" fill-opacity=".14"/><path d="${d}" fill="none" stroke="${color}" stroke-width="1.4" vector-effect="non-scaling-stroke"/><circle cx="${pts[n-1][0]}" cy="${pts[n-1][1]}" r="2" fill="${color}"/></svg>`;
+}
+
+/* ---------- state ---------- */
+const state = { side:'driver', idx:{driver:0, customer:0, ops:0, arch:0},
+  car:{brand:'BMW', model:'7er', color:'Schwarz', year:'2023', plate:'E'},
+  shop:0, slot:0, booked:false, justBooked:false, splash:true, campaign:0, prevIdx:0, photo:null, tracking:true, photoCheckDone:false, excl:new Set(['Glücksspiel','Tabak']),
+  calc:{cars:10, months:6, geo:true, swarm:false, retarget:false}, sel:new Set([1,2,3,4,5,6,7,8,9,10]), toast:'' };
+try{ const p = localStorage.getItem('sf_photo'); if(p) state.photo = p; }catch(e){}
+/* Stand Unit Economics v2 (20.09.2026): TKP 8,00 € brutto (aus Ströer-Preisliste hergeleitet), Produktion Einkauf 1.600 € / Verkauf 2.000 € (25 % Marge), plus 1.500 € Setup- und Reportinggebühr je Kampagne. Fahrerpauschale ist immer die Hälfte des Mediawerts. */
+const IMP_PER_CAR = 38400, MEDIA_PER_CAR = 307, PROD_PER_CAR = 2000, SETUP_FEE = 1500;
+const carBody = () => (CARS[state.car.brand].find(m=>m[0]===state.car.model)||['','kompakt'])[1];
+const carHex = () => (COLORS.find(c=>c[0]===state.car.color)||COLORS[0])[1];
+const carName = () => `${state.car.brand} ${state.car.model}`;
+const avatar = (cls='') => `<div class="avatar ${cls}">${state.photo?`<img src="${state.photo}" alt="Profilfoto">`:'PW'}</div>`;
+
+/* ---------- driver screens ---------- */
+const nav = (on) => `<div class="nav">
+  <button data-go="driver:7" class="${on==='home'?'on':''}">${ic.home}Start</button>
+  <button data-go="driver:4" class="${on==='route'?'on':''}">${ic.route}Fahrten</button>
+  <button data-go="driver:8" class="${on==='euro'?'on':''}">${ic.euro}Geld</button>
+  <button data-go="driver:9" class="${on==='user'?'on':''}">${ic.user}Profil</button></div>`;
+
+const driver = [
+ { step:'Start', ui:()=>`<div class="sc" style="display:flex;flex-direction:column;justify-content:flex-end">
+    <div class="logo" style="font-size:44px;margin-bottom:14px"><span class="s">STREET</span><span class="f">FLOW</span></div>
+    <h1 class="m-h1" style="font-size:40px">Dein Auto<br>verdient mit.</h1>
+    <p class="m-sub">Fahr wie immer. Wir zeigen dir nach 3 Wochen, was dein Fahrtenprofil wert ist. Foliert wird erst, wenn du dein Angebot kennst.</p>
+    <div class="card"><div class="li"><span class="t">1 · Auto anlegen</span><span class="pill o">2 Min</span></div><div class="li"><span class="t">2 · 21 Tage GPS-Tracking</span><span class="pill c">Ohne Folie</span></div><div class="li"><span class="t">3 · Angebot, Folierer wählen, Pauschale</span><span class="pill ok">ab 6 Mon.</span></div></div>
+    <button class="btn p" data-go="driver:1">Los geht's</button>
+    <button class="btn g" data-go="driver:7">Ich habe schon ein Konto</button></div>`,
+   explain:{ eyebrow:'Fahrer-App · Screen 1 von 9', h:'Einstieg', p:'Der erste Screen macht Versprechen und Reihenfolge klar: erst Tracking, dann Angebot, dann Folie. Das nimmt die größte Hürde sofort weg.',
+     must:['Wertversprechen in einem Satz','Drei-Schritte-Logik sichtbar, bevor etwas eingegeben wird','Registrierung und Login getrennt'], data:['Noch keine Daten'],
+     why:'Das Tracking-vor-Folie-Prinzip ist im Briefing der Kern der Fahrerseite. Es gehört auf den ersten Screen, nicht in die AGB.' } },
+
+ { step:'Onboarding', ui:()=>`<div class="sc">
+    <div class="ob" id="ob">
+      <div><div class="ill"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="#2E2E2C" stroke-width="2"/><path d="M18 62 C 32 58, 40 40, 55 44 S 78 60, 86 36" fill="none" stroke="#FF5A00" stroke-width="4" stroke-linecap="round"/><circle cx="18" cy="62" r="5" fill="#FF5A00"/><circle cx="86" cy="36" r="5" fill="#F5F5F5"/></svg></div><h3>Fahr wie immer</h3><p>Drei Wochen lang zeichnet die App im Hintergrund deine Fahrten auf. Nichts wird foliert, nichts kostet dich etwas.</p></div>
+      <div><div class="ill"><svg viewBox="0 0 100 100"><rect x="14" y="30" width="72" height="44" rx="8" fill="none" stroke="#2E2E2C" stroke-width="2"/><text x="50" y="60" text-anchor="middle" font-family="Anton" font-size="26" fill="#FF5A00">150 €</text><path d="M30 82h40" stroke="#3A3A38" stroke-width="3" stroke-linecap="round"/></svg></div><h3>Dein Preis steht fest</h3><p>Aus deinem Fahrtenprofil berechnen wir eine feste Monatspauschale. Die kennst du, bevor du dich entscheidest.</p></div>
+      <div><div class="ill"><svg viewBox="0 0 100 100"><path d="M12 66 L22 48 Q28 38 44 37 L66 36 Q80 36 88 50 L92 60 Q94 66 90 66 Z" fill="#F5F5F5"/><rect x="32" y="48" width="30" height="14" rx="2" fill="#FF5A00"/><circle cx="30" cy="68" r="8" fill="#0A0A0A" stroke="#3A3A38" stroke-width="3"/><circle cx="76" cy="68" r="8" fill="#0A0A0A" stroke="#3A3A38" stroke-width="3"/></svg></div><h3>Folierer um die Ecke</h3><p>Du wählst einen Partnerbetrieb in deiner Nähe und buchst den Termin direkt in der App. Ab dem Tag läuft deine Pauschale.</p></div>
+    </div>
+    <div class="dots" id="obdots"><i class="on"></i><i></i><i></i></div>
+    <button class="btn p" data-go="driver:2">Auto anlegen</button>
+    <button class="btn g" data-go="driver:2">Überspringen</button></div>`,
+   explain:{ eyebrow:'', h:'Onboarding', p:'Drei Wischkarten erklären das Modell in je einem Satz: Fahren, fester Preis, Folierer in der Nähe. Danach kommt die Registrierung. Wer es schon kennt, überspringt.',
+     must:['Maximal drei Karten, je eine Aussage','Illustration statt Screenshot','Überspringen immer möglich'], data:['Keine'],
+     why:'Der Kern des Modells (Preis vor Folie) ist erklärungsbedürftig. Drei Karten kosten 10 Sekunden und senken die Abbruchquote in der Registrierung.' } },
+
+ { step:'Auto', ui:()=>{ const c=state.car, models=CARS[c.brand]; return `<div class="sc">
+    <span class="m-lbl">Schritt 1 von 3</span><h2 class="m-h1">Dein Auto</h2>
+    <div class="carstage"><div class="wm logo">${LOGO}</div>${car3d(false)}<div class="cap"><span><b>${carName()}</b> · Referenzfoto</span><span>${BODIES[carBody()]}</span></div></div>
+    <div class="row2">
+      <div class="field"><label>Marke</label><select id="car-brand" data-car="brand">${Object.keys(CARS).map(b=>`<option ${b===c.brand?'selected':''}>${b}</option>`).join('')}</select></div>
+      <div class="field"><label>Modell</label><select id="car-model" data-car="model">${models.map(m=>`<option ${m[0]===c.model?'selected':''}>${m[0]}</option>`).join('')}</select></div>
+    </div>
+    <div class="field"><label>Farbe</label><div class="swatches">${COLORS.map(col=>`<button class="sw ${col[0]===c.color?'on':''}" style="--c:${col[1]}" data-color="${col[0]}" title="${col[0]}"><span>${col[0]}</span></button>`).join('')}</div></div>
+    <p class="note">Foto zeigt ein Referenzfahrzeug (BMW 7er), unabhängig von Marke, Modell und Farbe. Deine Angaben (${carName()}, ${c.color}) gehen an den Folierer.</p>
+    <div class="row2">
+      <div class="field"><label>Baujahr</label><select id="car-year" data-car="year">${Array.from({length:16},(_,i)=>2026-i).map(y=>`<option ${String(y)===c.year?'selected':''}>${y}</option>`).join('')}</select></div>
+      <div class="field"><label>Kennzeichen</label><input id="car-plate" value="E · SF 2026"></div>
+    </div>
+    <p class="note">Nicht dabei? Marke und Modell frei eintippen, wir prüfen die Folierbarkeit manuell.</p>
+    <button class="btn p" data-go="driver:3">Weiter zu Freigaben</button></div>${nav('user')}`; },
+   explain:{ eyebrow:'Fahrer-App · Screen 2 von 9', h:'Fahrzeugauswahl', p:'Marke, Modell und Farbe aus einem vollständigen Katalog. Der Fahrer sieht, dass die App sein Auto kennt. Das Modell bestimmt die Karosserieform (Kompakt, Kombi, SUV, Van, Transporter), die Form bestimmt später die folierbare Fläche. Das Foto hier ist im Prototyp ein festes Referenzbild, im echten Produkt zeigt es Marke, Modell und Farbe live.',
+     must:['Marken- und Modellkatalog (im MVP: die 23 meistverkauften Marken in Deutschland, rund 150 Modelle, hier alle klickbar)','Farbpalette mit 18 Standardfarben, im Produkt mit Live-Vorschau','Baujahr und Kennzeichenregion (Region bestimmt spätere Einsatzstadt)','Freitext als Fallback für seltene Fahrzeuge'],
+     data:['Fahrzeugstammdaten inkl. Karosserieform','Folierbare Fläche je Form (Türen, Heck, Motorhaube) für die Produktionskalkulation'], why:'Für die Produktion brauchen die Folierer später exakte Maße. Im MVP reicht der Modellname, der Partner kennt die Flächen seines Handwerks. Ein Kennzeichen-Scan mit Abfrage der Zulassungsdaten kommt nach dem Piloten.' } },
+
+ { step:'Freigaben', ui:()=>`<div class="sc">
+    <span class="m-lbl">Schritt 2 von 3</span><h2 class="m-h1">Freigaben</h2>
+    <p class="m-sub">Fast fertig. Fotos vom Auto brauchen wir erst, wenn dein Angebot feststeht, nicht jetzt.</p>
+    <h3 class="m-h2">Motive, die du nicht willst</h3>
+    <div class="seg">${['Glücksspiel','Tabak','Alkohol','Politik','Religion','Dating','Fast Food'].map(x=>`<button class="${state.excl.has(x)?'on':''}" data-excl="${x}">${x}</button>`).join('')}</div>
+    <div class="check"><span class="bx"></span><span>Ich nutze das Auto überwiegend privat und darf über die Außenflächen entscheiden.</span></div>
+    <div class="check"><span class="bx"></span><span>Meine Fahrtdaten werden zur Berechnung meines Angebots verarbeitet (Vertragsgrundlage, Art. 6 Abs. 1 lit. b DSGVO). Rohdaten gehen nie an Werbekunden.</span></div>
+    <div class="check"><span class="bx"></span><span>Standort „Immer erlauben" ist nötig, damit Fahrten im Hintergrund erfasst werden.</span></div>
+    <p class="note">Den Lackzustand hält der Folierer bei deinem Termin in drei Fotos fest, das machst du nicht selbst und nicht jetzt.</p>
+    <button class="btn p" data-go="driver:4">Tracking starten</button></div>${nav('user')}`,
+   explain:{ eyebrow:'Fahrer-App · Screen 3 von 9', h:'Freigaben', p:'Bewusst ohne Fotopflicht: Jedes zusätzliche Pflichtfeld vor dem ersten Wert (hier: Tracking starten) kostet Abbrecher. Der Fahrer gibt nur, was jetzt wirklich nötig ist, Zustandsfotos macht der Folierer erst beim Termin, wenn ohnehin ein Vor-Ort-Check stattfindet.',
+     must:['Branchen-Ausschluss als Vetorecht, bevor überhaupt ein Kunde da ist','Datenschutz mit Rechtsgrundlage aus dem Pitch-Konzept','Erklärung der Hintergrund-Standortfreigabe vor dem System-Dialog','Keine Fotopflicht in der Registrierung, das senkt die Hemmschwelle beim Onboarding'],
+     data:['Ausschlussliste je Fahrer für das Matching','Zustandsfotos entstehen erst beim Folierer-Termin, mit Zeitstempel und Geotag'], why:'Ohne „Immer erlauben" funktioniert das Modell nicht, das muss der MVP sauber erklären. Pflichtfotos vorab wären ein zusätzlicher Abbruchpunkt ohne Gegenwert für den Fahrer, der Folierer prüft den Lack ohnehin persönlich beim Termin.' } },
+
+ { step:'Tracking', ui:()=>`<div class="sc">
+    <span class="m-lbl">Profilphase läuft</span><h2 class="m-h1">Tag 9 von 21</h2>
+    <div class="ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="#2E2E2C" stroke-width="9"/><circle cx="50" cy="50" r="42" fill="none" stroke="#FF5A00" stroke-width="9" stroke-dasharray="${(9/21*264).toFixed(1)} 264" stroke-linecap="round"/></svg><div class="c">43 %<small>erfasst</small></div></div>
+    <div class="kpis"><div class="card"><span class="m-lbl">km</span><div class="kpi cnt">412</div></div><div class="card"><span class="m-lbl">Fahrten</span><div class="kpi cnt">23</div></div><div class="card"><span class="m-lbl">Std.</span><div class="kpi">6,7</div></div></div>
+    <div class="map">${routeSvg()}</div>
+    <div class="list">
+      <div class="li"><div><div class="t">Altenessen → Rüttenscheid</div><div class="d">Heute 07:52 · 14,2 km · 31 Min</div></div><span class="pill o">Rushhour</span></div>
+      <div class="li"><div><div class="t">Rüttenscheid → Altenessen</div><div class="d">Gestern 17:40 · 15,1 km · 38 Min</div></div><span class="pill o">Rushhour</span></div>
+      <div class="li"><div><div class="t">Altenessen → Centro Oberhausen</div><div class="d">Sa 14:05 · 9,8 km · 19 Min</div></div><span class="pill c">Einkauf</span></div>
+    </div>
+    <p class="note">GPS läuft im Hintergrund. Dein Angebot siehst du automatisch nach Tag 21.</p>
+    <button class="btn g" data-go="driver:5">Prototyp: zum Angebot springen</button></div>${nav('route')}`,
+   explain:{ eyebrow:'Fahrer-App · Screen 4 von 9', h:'Tracking-Phase', p:'Drei Wochen Wartezeit sind ein Absprungrisiko. Der Screen zeigt Fortschritt und dass die Daten ankommen, sonst deinstallieren Fahrer nach Tag 4.',
+     must:['Fortschritt in Tagen und Prozent','Fahrten-Liste mit erkannten Segmenten (Rushhour, Stau, Parken)','Warnung, wenn die Standortfreigabe fehlt','Pausieren und Abbrechen ohne Hürden'],
+     data:['GPS-Punkte alle 5 bis 10 Sekunden während der Fahrt','Map-Matching auf Straßensegmente (OSRM/Valhalla) serverseitig'], why:'Aus dem Algorithmus-Konzept: Rohe GPS-Punkte werden auf Segmente projiziert, bevor Kontakte gerechnet werden. Das passiert im Backend, der Fahrer sieht nur das Ergebnis.' } },
+
+ { step:'Angebot', ui:()=>{ const sel = CAMPAIGNS[state.campaign]; return `<div class="sc">
+    <span class="m-lbl">Profil abgeschlossen</span><h2 class="m-h1">Deine Angebote</h2>
+    <p class="note">${CAMPAIGNS.length} Werbekunden passen zu deiner Strecke. Wähle ein Angebot, die Vergütung richtet sich nach Reichweite und Laufzeit des Kunden.</p>
+    <div class="list offers">${CAMPAIGNS.map((c,i)=>`<div class="offer ${i===state.campaign?'on':''}" data-camp="${i}"><i class="sw" style="background:${c.bg};border:1px solid ${c.ac}"></i><div><div class="t">${c.name}</div><div class="d">${c.branche} · ${c.dauer} Monate Laufzeit</div></div><div class="p">${c.pay} €<small>/Monat</small></div></div>`).join('')}</div>
+    <div class="card hi"><div style="display:flex;justify-content:space-between;align-items:center"><span class="m-lbl">Monatliche Pauschale · ${sel.name}</span><span class="sf">S<span class="w">F</span></span></div><div class="kpi o"><span class="cnt">${sel.pay}</span> €<small>pro Monat, fix</small></div><p class="m-sub" style="margin-top:6px">Ausgezahlt zum 1. jedes Monats, solange die Folie drauf ist.</p></div>
+    <div class="carstage"><div class="wm logo">${LOGO}</div>${car3d(true)}<div class="cap"><span><b>${carName()}</b> · ${sel.name}</span><span>Teilfolierung</span></div></div>
+    <p class="note">Beispielmotiv. Das echte Motiv kommt vom Werbekunden, du siehst es vor der Folierung und kannst ablehnen.</p>
+    <h3 class="m-h2">Woraus sich das ergibt</h3>
+    <div class="list">
+      <div class="li"><div><div class="t">Erwartete Kontakte pro Monat</div><div class="d">Verkehrsstärke × Sichtbarkeit × Verweildauer</div></div><span class="v cnt" style="color:var(--cobalt)">${nf(IMP_PER_CAR)}</span></div>
+      <div class="li"><div><div class="t">Fahrleistung</div><div class="d">Hochgerechnet aus 21 Tagen</div></div><span class="v">960 km</span></div>
+      <div class="li"><div><div class="t">Rushhour-Anteil</div><div class="d">Ampel und Stau zählen stärker</div></div><span class="v">61 %</span></div>
+      <div class="li"><div><div class="t">Innenstadt-Anteil</div><div class="d">Hohe Passantenfrequenz</div></div><span class="v">34 %</span></div>
+    </div>
+    <h3 class="m-h2">Bedingungen</h3>
+    <div class="list">
+      <div class="li"><span class="t">Folierung</span><span class="v">Teilfolierung, kostenlos für dich</span></div>
+      <div class="li"><span class="t">Mindestlaufzeit</span><span class="v">${sel.dauer} Monate</span></div>
+      <div class="li"><span class="t">Foto-Check</span><span class="v">1× monatlich</span></div>
+      <div class="li"><span class="t">Vorzeitiger Ausstieg</span><span class="v">anteilige Rückzahlung</span></div>
+    </div>
+    <button class="btn p" data-go="driver:6">${sel.name}-Angebot annehmen und Folierer wählen</button>
+    <button class="btn g" data-go="driver:${state.booked?7:4}">${state.booked?'Zurück zum Start':'Später entscheiden'}</button>
+    <div class="brandline"><span class="logo">${LOGO}</span><span>Angebote berechnet aus deinem Fahrtenprofil · Stand 28.09.2026</span></div></div>${nav('home')}`; },
+   explain:{ eyebrow:'Fahrer-App · Screen 5 von 9', h:'Angebote', p:'Der wichtigste Screen der Fahrerseite. Statt eines einzelnen Angebots sieht der Fahrer alle passenden Werbekunden nebeneinander, mit eigener Vergütung und Laufzeit, und wählt selbst aus. Das eigene Auto zeigt das Motiv des gerade ausgewählten Angebots.',
+     must:['Mehrere Angebote parallel, je mit Vergütung und Laufzeit, klar auswählbar','Pauschale des gewählten Angebots groß und als fix erkennbar','Eigenes Fahrzeug mit Motiv-Vorschau des gewählten Angebots','Transparenz-Block: Kontakte, km, Rushhour, Innenstadt','Annahme löst rechtlich den Vertrag mit dem gewählten Werbekunden aus (Bestätigungscode)'],
+     data:['Offene Kampagnen aus dem Backoffice, gefiltert auf Fahrprofil und Zielgebiet','Preisstufe je Kampagne aus Budget, Laufzeit und Reichweitenbedarf des Werbekunden'], why:'Reale Nachfrage schwankt: Werbekunden zahlen je nach Laufzeit und Reichweitenbedarf unterschiedlich. Mehrere Angebote nebeneinander zu zeigen ist ehrlicher als ein einzelner Fixpreis und gibt dem Fahrer die Wahl.' } },
+
+ { step:'Folierer', ui:()=>{ const s=SHOPS[state.shop]; return `<div class="sc">
+    <span class="m-lbl">Schritt 3 von 3</span><h2 class="m-h1">Folierer in der Nähe</h2>
+    <div class="smap">${shopMap()}</div>
+    <div class="list">${SHOPS.map((sh,i)=>`<div class="shop ${i===state.shop?'on':''}" data-shop="${i}"><div class="n">${i+1}</div><div><div class="t">${sh.n}</div><div class="d">${sh.km.toLocaleString('de-DE')} km · <span class="stars">★★★★★</span> ${sh.rating.toLocaleString('de-DE')} (${sh.cnt})</div></div><div class="r"><b>${sh.next}</b>nächster Termin</div></div>`).join('')}</div>
+    <div class="card hi"><div style="display:flex;justify-content:space-between;align-items:center"><div class="t" style="font-weight:700;font-size:16px">${s.n}</div><span class="pill o">StreetFlow-Partner</span></div><div class="d" style="font-size:12.5px;color:var(--paper-70)">${s.a} · ${s.km.toLocaleString('de-DE')} km · Dauer ca. 4 Std. · Partnerbetrieb</div>
+    <span class="m-lbl" style="display:block;margin-top:12px">Freie Termine</span>
+    <div class="slots">${s.slots.map((sl,i)=>`<button class="slot ${state.slot===i?'on':''}" data-slot="${i}"><b>${sl[0]}</b>${sl[1]}<br>${sl[2]}</button>`).join('')}</div>
+    <button class="btn p" data-go="driver:7" data-book="1">Termin buchen · ${s.slots[state.slot][0]} ${s.slots[state.slot][1]}, ${s.slots[state.slot][2]}</button></div>
+    <p class="note">Die Folierung kostet dich nichts. Die Pauschale läuft ab dem Tag der Folierung. Keine Ersatzmobilität während der 4 Stunden.</p>
+    <div class="brandline"><span class="logo">${LOGO}</span><span>Geprüfte Partnerbetriebe, Auftrag und Druckdaten gehen automatisch an den Folierer.</span></div></div>${nav('home')}`; },
+   explain:{ eyebrow:'Fahrer-App · Screen 6 von 9', h:'Folierer & Termin', p:'Nach der Annahme wählt der Fahrer selbst einen Partnerbetrieb in der Nähe und bucht direkt einen Slot. Karte, Entfernung, Bewertung und nächster freier Termin auf einen Blick. StreetFlow foliert nicht selbst, die App vermittelt.',
+     must:['Karte mit Partnerbetrieben im Umkreis, sortiert nach Entfernung','Bewertung und nächster freier Termin je Betrieb','Slot-Auswahl und Buchung in einem Schritt, Bestätigung per Push','Hinweis: kostenlos für den Fahrer, Pauschale startet am Folierungstag'],
+     data:['Partnerbetriebe mit Adresse, Preis, Kapazitätskalender (im MVP vom Backoffice gepflegt)','Buchung erzeugt Auftrag beim Partner inkl. Fahrzeugdaten, Fotos und Druckdatei'], why:'Im Piloten reichen 3 bis 5 Partner in einer Stadt. Die Slots können per Backoffice eingetragen werden, eine eigene Partner-App kommt später. Die Karte ist hier stilisiert, im echten Produkt Apple/Google Maps.' } },
+
+ { step:'Dashboard', ui:()=>{ const s=SHOPS[state.shop], sl=s.slots[state.slot]; return `<div class="sc">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><span class="m-lbl">Hallo Paul</span><h2 class="m-h1" style="font-size:30px">${state.booked?'Monat 2 von 6':'Termin gebucht'}</h2></div>${avatar('md')}</div>
+    ${state.justBooked?`<div class="okov"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="43"/><path d="M30 52 L44 66 L72 36"/></svg><b>Termin gebucht</b><span>${SHOPS[state.shop].n} · ${sl[0]} ${sl[1]}, ${sl[2]} Uhr</span></div>`:''}
+    ${state.booked?'':`<div class="card" style="border-color:var(--ok)"><div class="li" style="padding:0"><div><div class="t">${s.n}</div><div class="d">${sl[0]} ${sl[1]} · ${sl[2]} Uhr · ${s.a}</div></div><span class="pill ok">Bestätigt</span></div></div>`}
+    <div class="carstage"><div class="wm logo">${LOGO}</div>${car3d(true)}<div class="cap"><span><b>${carName()}</b> · ${CAMPAIGNS[state.campaign].name}</span><span>Monat 2 / ${CAMPAIGNS[state.campaign].dauer}</span></div></div>
+    <button class="slot" style="width:100%;margin-top:8px;display:flex;justify-content:space-between;align-items:center;padding:11px 14px" data-go="driver:5"><span>Deine Angebote</span><span style="color:var(--paper-45);font-weight:400">${CAMPAIGNS.length} verfügbar ›</span></button>
+    <div class="card hi"><div style="display:flex;justify-content:space-between;align-items:center"><span class="m-lbl">Nächste Auszahlung · ${CAMPAIGNS[state.campaign].name}</span><span class="sf">S<span class="w">F</span></span></div><div class="kpi o"><span class="cnt">${CAMPAIGNS[state.campaign].pay}</span> €<small>am 01.11.</small></div><div class="bar"><i style="width:38%"></i></div><p class="note" style="margin-top:6px">12 von 31 Tagen dieses Monats erfasst</p></div>
+    ${state.photoCheckDone?`<div class="card" style="border-color:var(--ok)"><div class="li" style="padding:0"><div><div class="t">Foto-Check erledigt</div><div class="d">Front, Seite, Heck · nächster in 30 Tagen</div></div><span class="pill ok">Geprüft</span></div></div>`:`<div class="card" style="border-color:var(--warn)"><div class="li" style="padding:0"><div><div class="t">Foto-Check fällig</div><div class="d">Noch 6 Tage · Front, Seite, Heck</div></div><button class="slot" style="width:auto;padding:8px 12px;border-color:var(--warn);color:var(--warn)" data-photocheck="1">Fotos machen</button></div></div>`}
+    <h3 class="m-h2">Kontakte diese Woche</h3>
+    <div class="card"><div class="kpi c"><span class="cnt">8.120</span><small>Bruttokontakte</small></div><div class="chart">${bars([6100,7400,5200,8900,9300,4100,8120],'#2B4EFF',70,['Mo','Di','Mi','Do','Fr','Sa','So'])}</div></div>
+    <button class="btn g" data-go="driver:8">Auszahlungen ansehen</button></div>${nav('home')}`; },
+   explain:{ eyebrow:'Fahrer-App · Screen 7 von 9', h:'Aktive Kampagne', p:'Der Alltagsscreen beantwortet die drei Fragen eines Fahrers: Wann kommt Geld, was muss ich tun, wie lange noch. Das eigene Auto mit Motiv bleibt sichtbar, das schafft Identifikation. Ein direkter Link zurück zu „Deine Angebote" sorgt dafür, dass der Fahrer auch nach der Buchung jederzeit andere Kampagnen einsehen oder wechseln kann.',
+     must:['Nächste Auszahlung mit Datum','Aufgaben mit Frist: monatlicher Foto-Check','Laufzeit-Fortschritt','Tracking-Status mit Warnung, wenn die App keine Fahrten mehr erfasst','Sichtbarer Rückweg zu den Angeboten, nicht nur einmalig beim Onboarding'],
+     data:['Wöchentliche Kontakt-Aggregate aus der Engine','Foto-Check-Zyklus, Erinnerungen per Push'], why:'Der Foto-Check ist die günstigste Absicherung gegen abgezogene Folien und nicht bewegte Autos. Im MVP prüft ihn das Backoffice manuell. Die Angebote nur beim Onboarding zu zeigen und danach verschwinden zu lassen, würde einen Kampagnenwechsel unnötig erschweren.' } },
+
+ { step:'Geld', ui:()=>{ const sel = CAMPAIGNS[state.campaign]; return `<div class="sc">
+    <span class="m-lbl">Auszahlungen · ${sel.name}</span><h2 class="m-h1">Dein Geld</h2>
+    <div class="kpis" style="grid-template-columns:1fr 1fr"><div class="card"><span class="m-lbl">Bisher</span><div class="kpi"><span class="cnt">${sel.pay}</span> €</div></div><div class="card"><span class="m-lbl">Gesamt Vertrag</span><div class="kpi"><span class="cnt">${sel.pay*sel.dauer}</span> €</div></div></div>
+    <div class="list">
+      <div class="li"><div><div class="t">Oktober 2026</div><div class="d">Überwiesen am 01.11. · DE12 ···· 4471</div></div><span class="pill ok">${sel.pay} €</span></div>
+      <div class="li"><div><div class="t">November 2026</div><div class="d">Fällig am 01.12.</div></div><span class="pill warn">geplant</span></div>
+      <div class="li"><div><div class="t">Dezember 2026</div><div class="d">Fällig am 01.01.</div></div><span class="pill warn">geplant</span></div>
+    </div>
+    <h3 class="m-h2">Vertrag</h3>
+    <div class="card"><div class="li" style="padding-top:0"><span class="t">Vertrag als PDF</span><span class="v" style="color:var(--orange)">Öffnen</span></div><div class="li"><span class="t">Bankverbindung ändern</span><span class="v" style="color:var(--orange)">Bearbeiten</span></div><div class="li"><span class="t">Steuerhinweis</span><span class="v" style="color:var(--orange)">Lesen</span></div><div class="li" style="padding-bottom:0"><span class="t">Vorzeitig beenden</span><span class="v" style="color:var(--err)">Anfragen</span></div></div>
+    <div class="brandline"><span class="logo">${LOGO}</span><span>Auszahlung durch StreetFlow GmbH, Essen · Support: fahrer@streetflow.de</span></div></div>${nav('euro')}`; },
+   explain:{ eyebrow:'Fahrer-App · Screen 8 von 9', h:'Auszahlungen & Vertrag', p:'Vertrauen entsteht über pünktliches Geld und einen Vertrag, den man jederzeit findet. Bewusst schlicht: Historie, Planung, Dokumente.',
+     must:['Auszahlungshistorie mit Status','Vertrag und Bankdaten selbst verwaltbar','Ausstiegsanfrage als Prozess','Hinweis auf steuerliche Behandlung'],
+     data:['Auszahlungsläufe (im MVP: manueller SEPA-Export monatlich)'], why:'Automatisierte Auszahlung ist für 40 Pilot-Autos unnötig. Ein monatlicher CSV-Export reicht.' } },
+
+ { step:'Profil', ui:()=>`<div class="sc">
+    <span class="m-lbl">Mein Profil</span>
+    <div class="prohead">${avatar()}<div class="who"><b>Paul Wesselow</b><span>Fahrer seit Sept. 2026 · Essen-Altenessen</span><br><span class="pill ok" style="margin-top:6px">Verifiziert</span></div></div>
+    <div class="camrow"><label for="photo-cam">${ic.cam}Foto aufnehmen<input id="photo-cam" type="file" accept="image/*" capture="user" data-photo="1"></label><label for="photo-lib">${ic.img}Aus Galerie<input id="photo-lib" type="file" accept="image/*" data-photo="1"></label></div>
+    ${state.photo?'<button class="btn g" style="margin-top:8px;padding:10px" data-photo-clear="1">Foto entfernen</button>':'<p class="note">Dein Foto sehen nur StreetFlow und der Folierer bei der Übergabe, nie Werbekunden.</p>'}
+    <h3 class="m-h2">Mein Auto</h3>
+    <div class="carstage" style="margin-top:6px"><div class="wm logo">${LOGO}</div>${car3d(state.booked)}<div class="cap"><span><b>${carName()}</b> · Referenzfoto</span><button class="slot" style="padding:5px 10px;font-size:12px" data-go="driver:2">Ändern</button></div></div>
+    <p class="note">Deine hinterlegte Farbe: ${state.car.color} · ${state.car.year}</p>
+    <h3 class="m-h2">Kontakt</h3>
+    <div class="card"><div class="li" style="padding-top:0"><span class="t">E-Mail</span><span class="v" style="font-weight:600">paul@…</span></div><div class="li"><span class="t">Telefon</span><span class="v" style="font-weight:600">+49 ···· 3382</span></div><div class="li" style="padding-bottom:0"><span class="t">Adresse</span><span class="v" style="font-weight:600">45329 Essen</span></div></div>
+    <h3 class="m-h2">Einstellungen</h3>
+    <div class="card"><div class="li" style="padding-top:0"><div><div class="t">GPS-Tracking</div><div class="d">${state.tracking?'Aktiv, im Hintergrund':'Pausiert, keine Kontakte'}</div></div><span class="tog ${state.tracking?'on':''}" data-tog="tracking"></span></div><div class="li"><div><div class="t">Push-Erinnerungen</div><div class="d">Foto-Check, Auszahlung, Termine</div></div><span class="tog on"></span></div><div class="li" style="padding-bottom:0"><div><div class="t">Ausgeschlossene Branchen</div><div class="d">${[...state.excl].join(', ')||'keine'}</div></div><button class="slot" style="padding:5px 10px;font-size:12px" data-go="driver:3">Ändern</button></div></div>
+    <div class="card"><div class="li" style="padding-top:0"><span class="t">Meine Daten exportieren</span><span class="v" style="color:var(--orange)">DSGVO</span></div><div class="li" style="padding-bottom:0"><span class="t">Konto löschen</span><span class="v" style="color:var(--err)">Anfragen</span></div></div>
+    <div class="brandline"><span class="logo">${LOGO}</span><span>App-Version 0.1 (MVP) · Fahrzeugfotos: BMW 7er, Referenzaufnahmen für den internen Prototyp (Sprite-, Haribo-, Apple- und Aldi-Folierung als Platzhaltermotive, Markennamen/-designs nur zu Demozwecken, keine Kooperation mit den Marken)</span></div></div>${nav('user')}`,
+   explain:{ eyebrow:'Fahrer-App · Screen 9 von 9', h:'Mein Profil', p:'Profilfoto, Auto, Kontakt und Einstellungen an einem Ort. Das Foto dient der Übergabe beim Folierer (der weiß, wen er erwartet) und dem Vertrauen im Support. Hier im Prototyp kannst du dein eigenes Foto direkt hochladen.',
+     must:['Profilfoto per Kamera oder Galerie, klare Aussage, wer es sieht','Fahrzeug mit Vorschau und Änderungsmöglichkeit','Kontaktdaten, Adresse','Tracking pausieren, Push-Einstellungen, Branchen-Ausschluss','DSGVO: Datenexport und Kontolöschung'],
+     data:['Profilfoto (im Prototyp nur lokal im Browser gespeichert, nie hochgeladen)','Fahrzeug, Kontakt, Einstellungen'], why:'Datenexport und Kontolöschung sind bei Standortdaten Pflicht (Art. 15 und 17 DSGVO) und gehören schon in den MVP, nicht in Version 2.' } }
+];
+
+/* ---------- customer screens ---------- */
+const sideNav = (on) => `<div class="side"><div class="logo"><span class="s">STREET</span><span class="f">FLOW</span></div>
+  <button class="it ${on===0?'on':''}" data-go="customer:0">Neue Kampagne</button>
+  <button class="it ${on===1?'on':''}" data-go="customer:1">Fahrzeuge</button>
+  <button class="it ${on===2?'on':''}" data-go="customer:2">Reporting</button>
+  <button class="it" data-go="customer:2">Rechnungen</button>
+  <div class="acct"><b>RuhrStrom Energie GmbH</b>Lena Bauer · Marketing</div></div>`;
+function calc(){
+  const c = state.calc, imp = c.cars*IMP_PER_CAR;
+  let media = c.cars*MEDIA_PER_CAR; if(c.geo) media*=1.15; if(c.retarget) media*=1.10;
+  const prod = c.cars*PROD_PER_CAR, swarm = c.swarm?490:0;
+  return {imp, media, prod, swarm, setup:SETUP_FEE, total: media*c.months + prod + swarm + SETUP_FEE, tkp: media/imp*1000};
+}
+const fleet = [
+ [1,'VW Golf, weiß','Altenessen / Innenstadt',960,38400,61,92],[2,'Škoda Octavia, grau','Rüttenscheid / Südviertel',1120,41200,58,94],[3,'Opel Corsa, weiß','Frohnhausen / Holsterhausen',740,29800,66,86],
+ [4,'BMW 1er, schwarz','Kettwig / Werden',1380,33100,42,78],[5,'Seat Leon, weiß','Steele / Kray',880,31900,55,84],[6,'Toyota Yaris, weiß','Innenstadt / Nordviertel',620,35600,71,90],
+ [7,'Ford Focus, silber','Borbeck / Bergeborbeck',910,30200,52,81],[8,'Hyundai i30, weiß','Rüttenscheid / Innenstadt',1010,42800,64,96],[9,'VW Polo, schwarz','Altendorf / Frohnhausen',700,27400,60,79],
+ [10,'Kia Ceed, weiß','Huttrop / Steele',830,30900,57,83],[11,'Renault Clio, weiß','Katernberg / Schonnebeck',560,22100,48,66],[12,'Audi A3, grau','Bredeney / Rüttenscheid',1240,36700,49,85]
+];
+const customer = [
+ { step:'Kampagne', ui:()=>{ const k=calc(), c=state.calc; return `${sideNav(0)}<div class="content">
+    <div class="ch"><div><h2>Neue Kampagne</h2><div class="sub">Stadt, Laufzeit, Fahrzeuge und Wirkungspakete wählen. Der Preis rechnet live mit.</div></div><span class="pill c">Entwurf</span></div>
+    <div class="grid2"><div>
+      <div class="row2"><div class="field"><label>Stadt</label><select id="c-city"><option>Essen</option><option>Dortmund</option><option>Düsseldorf</option></select></div><div class="field"><label>Laufzeit</label><select id="c-months" data-calc="months"><option value="6" ${c.months==6?'selected':''}>6 Monate</option><option value="9" ${c.months==9?'selected':''}>9 Monate</option><option value="12" ${c.months==12?'selected':''}>12 Monate</option></select></div></div>
+      <div class="row2"><div class="field"><label>Fahrzeuge</label><input id="c-cars" type="number" min="5" max="40" value="${c.cars}" data-calc="cars"></div><div class="field"><label>Start</label><input id="c-start" value="01.10.2026"></div></div>
+      <div class="field"><label>Zielgebiete</label><div class="chips"><span class="chip on">Innenstadt</span><span class="chip on">Rüttenscheid</span><span class="chip on">Altenessen</span><span class="chip">Steele</span><span class="chip">Kettwig</span><span class="chip">Borbeck</span></div></div>
+      <div class="field"><label>Wirkungspakete</label>
+        <div class="pk ${c.geo?'on':''}" data-pk="geo"><span class="bx"></span><div><div class="t">Geofencing-Schwerpunkt</div><div class="d">Fahrer mit hohem Anteil in den Zielgebieten werden bevorzugt gematcht</div></div><span class="pr">+15 % Media</span></div>
+        <div class="pk ${c.swarm?'on':''}" data-pk="swarm"><span class="bx"></span><div><div class="t">Swarm-Event</div><div class="d">Alle Fahrzeuge an einem Tag an einem Ort</div></div><span class="pr">+490 € einmalig</span></div>
+        <div class="pk ${c.retarget?'on':''}" data-pk="retarget"><span class="bx"></span><div><div class="t">Retargeting-Export</div><div class="d">Anonymisierte Kontaktzonen für Online-Kampagnen</div></div><span class="pr">+10 % Media</span></div>
+      </div>
+      <div class="field"><label>Motiv</label><div class="upload">Druckdaten hochladen (PDF, min. 300 dpi)</div></div>
+    </div>
+    <div class="card dk calc"><span class="m-lbl">Live-Kalkulation</span>
+      <div class="kpi c" style="margin-top:6px">${nf(Math.round(k.imp))}<small>Kontakte / Monat</small></div>
+      <div class="list">
+        <div class="li"><span class="t">Mediakosten / Monat</span><span class="v">${eur(k.media)}</span></div>
+        <div class="li"><div><div class="t">Produktion (einmalig, vorab)</div><div class="d">${c.cars} × Teilfolierung à 2.000 €</div></div><span class="v">${eur(k.prod)}</span></div>
+        <div class="li"><span class="t">Setup- &amp; Reportinggebühr</span><span class="v">${eur(k.setup)}</span></div>
+        ${c.swarm?`<div class="li"><span class="t">Swarm-Event</span><span class="v">${eur(k.swarm)}</span></div>`:''}
+        <div class="li"><span class="t">TKP (Bruttokontakte)</span><span class="v">${k.tkp.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})} €</span></div>
+        <div class="li tot"><span class="t">Gesamt ${c.months} Monate</span><span class="v">${eur(k.total)}</span></div>
+      </div>
+      <button class="btn p" data-go="customer:1">Fahrzeuge auswählen</button></div></div></div>`; },
+   explain:{ eyebrow:'Kunden-Portal · Screen 1 von 3', h:'Kampagne anlegen', p:'Der Werbekunde konfiguriert und sieht sofort Kontakte, TKP und Gesamtpreis. Die Vorkasse für Produktion und Setup ist im Preis sichtbar.',
+     must:['Live-Kalkulation','Wirkungspakete mit Aufpreis','Produktions- und Setupkosten als Vorkasse','Motiv-Upload'], data:['Verfügbare Fahrer je Stadt mit Kontakt-Prognose','Preisregeln'],
+     why:'Beispiel: 307 € Media je Auto und Monat bei 38.400 Kontakten ergibt einen TKP von 8 €, hergeleitet aus Ströers eigener Preisliste. Die Fahrerpauschale ist immer die Hälfte des Mediawerts, hier 150 €. Bleiben 157 € Deckungsbeitrag, mit anteiliger Produktionsmarge 224 €.' } },
+ { step:'Fahrzeuge', ui:()=>{ const n=state.sel.size, imp=[...state.sel].reduce((a,i)=>a+fleet[i-1][4],0); return `${sideNav(1)}<div class="content">
+    <div class="ch"><div><h2>Fahrzeuge wählen</h2><div class="sub">Anonymisierte Fahrerprofile in Essen, sortiert nach Match-Score.</div></div><div><span class="pill o">${n} von ${state.calc.cars} gewählt</span> &nbsp; <span class="pill c">${nf(imp)} Kontakte / Monat</span></div></div>
+    <div class="map" style="height:130px;margin:0 0 12px">${routeSvg('#2B4EFF')}</div>
+    <div class="tbl"><table><thead><tr><th></th><th>Fahrzeug</th><th>Schwerpunkt</th><th>km / Monat</th><th>Kontakte / Monat</th><th>Rushhour</th><th>Score</th></tr></thead><tbody>
+      ${fleet.map(f=>`<tr class="${state.sel.has(f[0])?'sel':''}" data-row="${f[0]}"><td><span style="display:inline-block;width:16px;height:16px;border-radius:4px;border:2px solid ${state.sel.has(f[0])?'var(--orange)':'var(--fog2)'};background:${state.sel.has(f[0])?'var(--orange)':'transparent'}"></span></td><td>${f[1]}</td><td>${f[2]}</td><td>${nf(f[3])}</td><td style="color:#8FA2FF;font-weight:700">${nf(f[4])}</td><td>${f[5]} %</td><td><span class="score">${f[6]}</span></td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="btnrow"><button class="btn p" data-go="customer:2" data-toast="Kampagne gebucht · Produktionsrechnung versendet">Kampagne buchen · ${eur(calc().prod)} Produktion vorab</button><button class="btn g" data-go="customer:0">Zurück</button></div></div>`; },
+   explain:{ eyebrow:'Kunden-Portal · Screen 2 von 3', h:'Fahrzeug-Matching', p:'Jedes Fahrzeug hat eine Kontakt-Prognose und einen Match-Score. Fahrer bleiben anonym.',
+     must:['Liste freigegebener Fahrer mit Prognose und Score','Auswahl bis zur gebuchten Anzahl','Buchung löst Produktionsrechnung und Fahrer-Benachrichtigung aus'], data:['Engine-Output je Fahrer','Match-Score = Gebietsüberdeckung × Kontaktvolumen'],
+     why:'Im MVP kann das Backoffice die Vorauswahl treffen, der Kunde bestätigt nur.' } },
+ { step:'Reporting', ui:()=>`${sideNav(2)}<div class="content">
+    <div class="ch"><div><h2>Ökostrom aus dem Revier</h2><div class="sub">Essen · 10 Fahrzeuge · Woche 7 von 26</div></div><span class="pill ok">Läuft</span></div>
+    <div class="kpirow">
+      <div class="card"><span class="m-lbl">Kontakte kumuliert</span><div class="kpi c">612 T</div><div class="note" style="margin-top:4px">Plan: 590 T · +3,7 %</div></div>
+      <div class="card"><span class="m-lbl">Fahrzeuge aktiv</span><div class="kpi">9 <small>/ 10</small></div></div>
+      <div class="card"><span class="m-lbl">Ø Kontakte / Auto / Tag</span><div class="kpi">1.290</div></div>
+      <div class="card"><span class="m-lbl">Zielgebiet-Anteil</span><div class="kpi o">68 %</div></div>
+    </div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="card dk"><span class="m-lbl">Kontakte je Woche</span><div class="chart">${line([61000,74000,82000,88000,91000,104000,112000],'#2B4EFF',110)}</div></div>
+      <div class="card dk"><span class="m-lbl">Kontakte nach Tageszeit</span><div class="chart">${bars([9,14,31,22,18,29,34,21],'#FF5A00',90,['6','8','10','12','14','16','18','20'])}</div></div>
+    </div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="card dk"><span class="m-lbl">Abdeckung nach Stadtteil</span><div class="heat">${[['Innenstadt',.95],['Rüttenscheid',.85],['Altenessen',.7],['Frohnhausen',.5],['Steele',.45],['Holsterh.',.4],['Nordviertel',.6],['Südviertel',.55],['Borbeck',.3],['Kettwig',.15],['Kray',.35],['Bredeney',.25]].map(h=>`<div style="background:rgba(43,78,255,${(.12+h[1]*.8).toFixed(2)})">${h[0]}</div>`).join('')}</div></div>
+      <div class="card dk"><span class="m-lbl">Fahrzeuge</span><div class="list">
+        <div class="li"><div><div class="t">#08 Hyundai i30</div><div class="d">Rüttenscheid · 44.100 Kontakte</div></div><span class="pill ok">aktiv</span></div>
+        <div class="li"><div><div class="t">#02 Škoda Octavia</div><div class="d">Südviertel · 40.700 Kontakte</div></div><span class="pill ok">aktiv</span></div>
+        <div class="li"><div><div class="t">#11 Renault Clio</div><div class="d">Katernberg · Foto-Check überfällig</div></div><span class="pill warn">prüfen</span></div>
+        <div class="li"><div><div class="t">#04 BMW 1er</div><div class="d">Kettwig · 5 Tage keine Fahrt</div></div><span class="pill err">inaktiv</span></div>
+      </div></div>
+    </div></div>`,
+   explain:{ eyebrow:'Kunden-Portal · Screen 3 von 3', h:'Live-Reporting', p:'Der Beweis, dass die Messwährung funktioniert: Plan gegen Ist, wo Kontakte entstehen, welche Fahrzeuge Probleme machen.',
+     must:['Kontakte gegen Plan','Zeitverlauf, Tageszeit, Stadtteil','Fahrzeugstatus mit Ausnahmen','PDF-Export'], data:['Tägliche Aggregation der Engine'], why:'Kein Wirkungsmultiplikator im MVP-Reporting, der wird erst in der Pilotphase empirisch erhoben.' } }
+];
+
+/* ---------- ops ---------- */
+const ops = [
+ { step:'Backoffice', ui:()=>`<div class="side"><div class="logo"><span class="s">STREET</span><span class="f">FLOW</span></div>
+    <button class="it on">Fahrer-Freigabe</button><button class="it">Kampagnen</button><button class="it">Matching</button><button class="it">Partnerbetriebe</button><button class="it">Auszahlungen</button><button class="it">Foto-Checks</button>
+    <div class="acct"><b>Backoffice</b>Paul · Admin</div></div>
+    <div class="content">
+    <div class="ch"><div><h2>Fahrer-Freigabe</h2><div class="sub">Neue Profile nach Tracking-Phase prüfen und Preisstufe bestätigen.</div></div><span class="pill warn">4 offen</span></div>
+    <div class="kpirow"><div class="card"><span class="m-lbl">Im Tracking</span><div class="kpi">23</div></div><div class="card"><span class="m-lbl">Freigegeben, frei</span><div class="kpi c">14</div></div><div class="card"><span class="m-lbl">In Kampagne</span><div class="kpi o">31</div></div><div class="card"><span class="m-lbl">Alerts</span><div class="kpi" style="color:var(--err)">3</div></div></div>
+    <div class="tbl"><table><thead><tr><th>Fahrer</th><th>Fahrzeug</th><th>Fotos</th><th>Kontakte / Monat</th><th>Vorschlag</th><th>Aktion</th></tr></thead><tbody>
+      <tr><td>P. Wesselow</td><td>${carName()}, ${state.car.color}, ${state.car.year}</td><td><span class="pill ok">3/3 ok</span></td><td style="color:#8FA2FF;font-weight:700">38.400</td><td>Stufe 2 · 150 €</td><td><button class="slot on" style="width:auto;padding:6px 10px">Freigeben</button></td></tr>
+      <tr><td>M. Yilmaz</td><td>Opel Corsa, weiß, 2019</td><td><span class="pill ok">3/3 ok</span></td><td style="color:#8FA2FF;font-weight:700">29.800</td><td>Stufe 1 · 120 €</td><td><button class="slot on" style="width:auto;padding:6px 10px">Freigeben</button></td></tr>
+      <tr><td>S. Krüger</td><td>BMW 1er, schwarz, 2018</td><td><span class="pill warn">Delle Heck</span></td><td style="color:#8FA2FF;font-weight:700">33.100</td><td>Stufe 2 · 150 €</td><td><button class="slot" style="width:auto;padding:6px 10px">Rückfrage</button></td></tr>
+    </tbody></table></div>
+    <div class="grid2" style="margin-top:16px">
+      <div class="card dk"><span class="m-lbl">Alerts</span><div class="list">
+        <div class="li"><div><div class="t">#04 BMW 1er · 5 Tage keine Fahrt</div><div class="d">Fahrer kontaktieren</div></div><span class="pill err">Tracking</span></div>
+        <div class="li"><div><div class="t">#11 Renault Clio · Foto-Check überfällig</div><div class="d">Erinnerung 2× gesendet</div></div><span class="pill warn">Folie</span></div>
+        <div class="li"><div><div class="t">Folientechnik Kray · Slots KW 42 fehlen</div><div class="d">Partner anrufen</div></div><span class="pill warn">Partner</span></div>
+      </div></div>
+      <div class="card dk"><span class="m-lbl">Partnerbetriebe Essen</span><div class="list">${SHOPS.map(s=>`<div class="li"><div><div class="t">${s.n}</div><div class="d">${s.a} · Teilfolierung 1.600 €</div></div><span class="pill ok">aktiv</span></div>`).join('')}</div></div>
+    </div></div>`,
+   explain:{ eyebrow:'Backoffice · 1 Screen', h:'Backoffice', p:'Alles, was im MVP nicht automatisiert sein muss, läuft hier manuell: Fahrer freigeben, Partner-Slots pflegen, Auszahlungen exportieren.',
+     must:['Freigabe-Queue mit Fotos und Engine-Vorschlag','Alerts','Partnerbetriebe mit Preisen und Kapazität','Auszahlungs-Export'], data:['Alle Objekte des Systems'], why:'Im MVP ein internes Tool auf Basis von Retool oder Airtable. Kein Design-Aufwand, nur Funktion.' } }
+];
+
+/* ---------- architecture ---------- */
+const arch = [
+ { step:'Aufbau', ui:()=>`<div class="arch">
+    <h2>So ist der MVP aufgebaut</h2>
+    <p class="lead">Drei Oberflächen um einen Kern. Der Kern ist die Impression-Engine, die aus GPS-Fahrten Kontakte macht und daraus auf beiden Seiten den Preis ableitet. Alles andere ist Vermittlung.</p>
+    <div class="diag">
+      <div class="box"><div class="tag">Mobil · iOS &amp; Android · Priorität 1</div><h3>Fahrer-App</h3><ul><li>Fahrzeugkatalog mit Farbvorschau</li><li>Fotos, Branchen-Ausschluss, Freigaben</li><li>Hintergrund-GPS, 21 Tage Profilphase</li><li>Angebot mit fixer Pauschale und Motiv-Vorschau</li><li>Folierer-Karte mit Terminbuchung</li><li>Dashboard, Foto-Check, Auszahlungen, Profil</li></ul></div>
+      <div class="arrow">→</div>
+      <div class="box core"><div class="tag">Backend · der Moat</div><h3>Impression-Engine</h3><ul><li>Map-Matching GPS → Straßensegmente (OSRM / Valhalla)</li><li>Verkehrsstärke je Segment und Zeit (BASt, kommunale Zählstellen)</li><li>Kontakte = Verkehrsstärke × Sichtbarkeit × Verweildauer</li><li>Kappung gegen Doppelzählung im Stau</li><li>Preisstufe Fahrer, Mediapreis Kunde, Match-Score</li></ul></div>
+      <div class="arrow">→</div>
+      <div class="box"><div class="tag">Web · Desktop</div><h3>Kunden-Portal</h3><ul><li>Kampagne konfigurieren, Live-Kalkulation</li><li>Wirkungspakete</li><li>Fahrzeug-Matching, anonymisiert</li><li>Buchung mit Produktions-Vorkasse</li><li>Live-Reporting</li></ul></div>
+    </div>
+    <div class="scope">
+      <div class="box"><h3>Im MVP <span class="pill ok">Muss</span></h3><ul><li>Fahrer-App komplett (alle 9 Screens)</li><li>Engine mit BASt-Daten und Map-Matching, 3 bis 4 Preisstufen</li><li>Kunden-Portal mit Kalkulation, Buchung, Reporting</li><li>Backoffice als internes Admin-Tool</li><li>Verträge, DSGVO-Konzept, Foto-Check-Prozess</li><li>Eine Stadt, 40 Autos, 3 bis 5 Partnerbetriebe</li></ul></div>
+      <div class="box"><h3>Später <span class="pill c">Nach Pilot</span></h3><ul><li>Kennzeichen-Scan statt Katalogauswahl</li><li>Wirkungsmultiplikator aus eigener Attention-Studie</li><li>Partner-App für Folierer mit eigenem Kalender</li><li>Self-Service-Auszahlung</li><li>Kommerzielle Verkehrsdaten, agma-Anschluss</li><li>Mehrere Städte, Agenturzugänge, API</li></ul></div>
+    </div>
+    <div class="stack"><h3 style="font-size:20px;margin-bottom:6px">Tech-Vorschlag für den Piloten</h3>
+    <div class="tbl"><table><tbody>
+      <tr><td>Fahrer-App</td><td>React Native oder Flutter, eine Codebasis für iOS und Android. Hintergrund-Standort früh auf echten Geräten testen. Karte über Apple/Google Maps SDK.</td></tr>
+      <tr><td>Fahrzeugkatalog</td><td>Eigene Tabelle Marke/Modell/Karosserieform, gepflegt im Backoffice. Kein externer Dienst nötig.</td></tr>
+      <tr><td>Kunden-Portal</td><td>Web-App (React oder Next.js).</td></tr>
+      <tr><td>Engine</td><td>Python-Backend, OSRM oder Valhalla, BASt SVZ plus Open-Data-Zählstellen. Tages-Batch reicht.</td></tr>
+      <tr><td>Backoffice</td><td>Retool, Airtable oder ein einfaches Admin-Framework.</td></tr>
+      <tr><td>Aufwand</td><td>Passt in den Pitch-Posten "Tech und Algorithmus, 12 Monate, 60.000 €", wenn Backoffice und Auszahlung manuell bleiben.</td></tr>
+    </tbody></table></div></div></div>`,
+   explain:{ eyebrow:'Übersicht', h:'Was zuerst gebaut wird', p:'Der MVP beweist eine These: Aus GPS-Daten lässt sich ein Preis ableiten, den Fahrer annehmen und Kunden bezahlen.',
+     must:['Reihenfolge: Engine-Prototyp (Wochen 1 bis 6), Fahrer-App Tracking (Wochen 4 bis 12), Portal (Wochen 10 bis 18)','Erster Meilenstein: 10 Fahrer mit fertigem Profil und Angebot'],
+     data:['Beispielzahlen: 38.400 Kontakte, 150 € Pauschale, 307 € Media (TKP 8,00 €), 2.000 € Produktion, 1.500 € Setup je Kampagne'], why:'Die Fahrer-App kann vor der Engine starten: Tracking sammelt schon Daten, während die Formel noch gebaut wird.' } }
+];
+const sides = {driver, customer, ops, arch};
+
+/* ---------- render ---------- */
+function render(){
+  const side = state.side, list = sides[side], i = state.idx[side], scr = list[i];
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.side===side));
+  document.getElementById('steps').innerHTML = list.length>1 ? list.map((s,j)=>`<button class="step ${j===i?'on':j<i?'done':''}" data-go="${side}:${j}">${j+1} ${s.step}</button>`).join('') : '';
+  const ui = scr.ui(), toast = state.toast ? `<div class="toast">${state.toast}</div>` : '';
+  const stage = document.getElementById('stage');
+  if(side==='driver'){
+    const dir = i < state.prevIdx ? 'back' : 'fwd'; state.prevIdx = i;
+    const splash = (i===0 && state.splash) ? `<div class="splash"><div class="logo">${LOGO}</div><small>Dein Auto verdient mit</small></div>` : ''; if(i===0) state.splash = false;
+    stage.innerHTML = `<div class="phone"><div class="notch"></div><div class="screen" data-dir="${dir}"><div class="sb"><span>09:41</span><span>●●● 5G ▮</span></div>${i>0?`<div class="appbar"><span class="logo sm">${LOGO}</span>${avatar('xs')}</div>`:''}${ui}${toast}${splash}</div></div>`;
+    state.justBooked = false;
+  }
+  else if(side==='arch') stage.innerHTML = ui;
+  else stage.innerHTML = `<div class="browser"><div class="bbar"><div class="dots"><i></i><i></i><i></i></div><div class="url">app.streetflow.de/${side==='ops'?'admin':'kampagnen'}</div></div><div class="bbody" style="position:relative">${ui}${toast}</div></div>`;
+  const e = scr.explain; if(side==='driver') e.eyebrow = `Fahrer-App · Screen ${i+1} von ${list.length}`;
+  document.getElementById('panel').innerHTML = `<div class="eyebrow">${e.eyebrow}</div><h2>${e.h}</h2><p>${e.p}</p>
+    <h4>Muss können</h4><ul>${e.must.map(m=>`<li>${m}</li>`).join('')}</ul>
+    <h4>Daten dahinter</h4><ul>${e.data.map(m=>`<li>${m}</li>`).join('')}</ul>
+    <div class="why">${e.why}</div>
+    <div class="pnav"><button data-go="${side}:${i-1}" ${i===0?'disabled':''}>Zurück</button><button class="next" data-go="${side}:${i+1}" ${i>=list.length-1?'disabled':''}>Weiter</button></div>`;
+  if(state.toast){ state.toast=''; setTimeout(()=>{ const t=document.querySelector('.toast'); if(t) t.remove(); }, 2400); }
+  countUp();
+  requestAnimationFrame(()=>requestAnimationFrame(()=>document.querySelectorAll('.okov,.splash').forEach(e=>e.classList.add('go'))));
+  const ob = document.getElementById('ob'); if(ob){ ob.addEventListener('scroll', ()=>{ const k = Math.round(ob.scrollLeft / ob.clientWidth); document.querySelectorAll('#obdots i').forEach((d,j)=>d.classList.toggle('on', j===k)); }, {passive:true}); }
+}
+function countUp(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  document.querySelectorAll('.cnt').forEach(el=>{
+    const raw = el.textContent.trim(), target = parseInt(raw.replace(/\./g,''),10); if(isNaN(target)) return;
+    const t0 = performance.now(), dur = 900;
+    (function step(){ const k = Math.min(1,(performance.now()-t0)/dur), e = 1-Math.pow(1-k,3); el.textContent = nf(Math.round(target*e)); if(k<1) requestAnimationFrame(step); else el.textContent = raw; })();
+  });
+}
+
+document.addEventListener('click', ev=>{
+  const tab = ev.target.closest('.tab'); if(tab){ state.side = tab.dataset.side; render(); return; }
+  const col = ev.target.closest('[data-color]'); if(col){ state.car.color = col.dataset.color;
+    document.querySelectorAll('.sw').forEach(b=>b.classList.toggle('on', b.dataset.color===state.car.color));
+    document.querySelectorAll('.car3d').forEach(c=>c.dataset.hex = carHex());
+    const cap = document.querySelector('.carstage .cap span b'); if(cap && cap.parentElement) cap.parentElement.innerHTML = `<b>${carName()}</b> · ${state.car.color}`;
+    if(window.THREE && liveCars.length) setPaint(carHex()); else render(); return; }
+  const cp = ev.target.closest('[data-camp]'); if(cp){ state.campaign = +cp.dataset.camp; render(); return; }
+  const ex = ev.target.closest('[data-excl]'); if(ex){ const v=ex.dataset.excl; state.excl.has(v)?state.excl.delete(v):state.excl.add(v); render(); return; }
+  const tg = ev.target.closest('[data-tog]'); if(tg){ state[tg.dataset.tog] = !state[tg.dataset.tog]; render(); return; }
+  const pc = ev.target.closest('[data-photo-clear]'); if(pc){ state.photo=null; try{localStorage.removeItem('sf_photo');}catch(e){} render(); return; }
+  const fc = ev.target.closest('[data-photocheck]'); if(fc){ state.photoCheckDone = true; state.toast = 'Foto-Check erledigt · nächster in 30 Tagen'; render(); return; }
+  const sh = ev.target.closest('[data-shop]'); if(sh){ state.shop = +sh.dataset.shop; state.slot = 0; render(); return; }
+  const slot = ev.target.closest('[data-slot]'); if(slot){ state.slot = +slot.dataset.slot; render(); return; }
+  const pk = ev.target.closest('[data-pk]'); if(pk){ state.calc[pk.dataset.pk] = !state.calc[pk.dataset.pk]; render(); return; }
+  const row = ev.target.closest('[data-row]'); if(row){ const id=+row.dataset.row; if(state.sel.has(id)) state.sel.delete(id); else if(state.sel.size<state.calc.cars) state.sel.add(id); render(); return; }
+  const go = ev.target.closest('[data-go]'); if(go && !go.disabled){
+    const [s,n] = go.dataset.go.split(':'); state.side = s; state.idx[s] = Math.max(0, Math.min(sides[s].length-1, +n));
+    if(go.dataset.book){ state.booked = false; state.justBooked = true; setTimeout(()=>{ state.booked = true; }, 2500); }
+    if(go.dataset.toast) state.toast = go.dataset.toast;
+    render(); window.scrollTo({top:0,behavior:'smooth'}); }
+});
+document.addEventListener('change', ev=>{
+  const c = ev.target.dataset.car; if(c){ state.car[c] = ev.target.value; if(c==='brand') state.car.model = CARS[state.car.brand][0][0]; render(); return; }
+  if(ev.target.dataset.photo){ const f = ev.target.files && ev.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = () => { state.photo = r.result; try{ localStorage.setItem('sf_photo', r.result); }catch(e){} state.toast='Foto gespeichert'; render(); }; r.readAsDataURL(f); return; }
+  const k = ev.target.dataset.calc; if(k){ const v=+ev.target.value; if(!v) return; state.calc[k] = k==='cars' ? Math.max(5, Math.min(40, v)) : v; if(k==='cars') state.sel = new Set(fleet.slice(0, state.calc.cars).map(f=>f[0])); render(); }
+});
+document.addEventListener('input', ev=>{
+  const k = ev.target.dataset.calc; if(k!=='cars') return; const v=+ev.target.value; if(!v) return;
+  state.calc.cars = Math.max(5, Math.min(40, v)); state.sel = new Set(fleet.slice(0, state.calc.cars).map(f=>f[0]));
+  const pos = ev.target.selectionStart; render(); const el=document.getElementById('c-cars'); if(el){ el.focus(); try{el.setSelectionRange(pos,pos);}catch(e){} }
+});
+
+/* App-Modus: automatisch aktiv, wenn vom iOS-Homescreen gestartet (navigator.standalone) oder Android-PWA (display-mode:standalone), sonst manuell über ?app=1. Zeigt nur die Fahrer-App, ohne Pitch-Deck-Rahmen. */
+function isStandalone(){
+  try{ if(window.navigator.standalone === true) return true; }catch(e){}
+  try{ if(window.matchMedia && matchMedia('(display-mode: standalone)').matches) return true; }catch(e){}
+  return false;
+}
+if(isStandalone() || new URLSearchParams(location.search).has('app')){
+  document.body.classList.add('kiosk');
+  state.side = 'driver';
+}
+const kioskExit = document.getElementById('kioskExit');
+if(kioskExit) kioskExit.addEventListener('click', () => { document.body.classList.remove('kiosk'); try{ history.replaceState(null,'',location.pathname); }catch(e){} render(); });
+
+render();
+</script>
+
+</body></html>

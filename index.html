@@ -431,7 +431,8 @@ const CAMPAIGNS = [
   {name:'Sprite', branche:'Erfrischungsgetränk', photo:'sprite', bg:'#1E7A3C', fg:'#F5F5F5', ac:'#C9E23A', pay:150, dauer:6}, /* TKP 8,00 € */
   {name:'Haribo', branche:'Süßwaren', photo:'haribo', bg:'#1E3A8A', fg:'#F5F5F5', ac:'#E11D2E', pay:140, dauer:6}, /* TKP 7,40 € */
   {name:'iPhone 16 (Apple)', branche:'Elektronik', photo:'iphone16', bg:'#1A1A1A', fg:'#F5F5F5', ac:'#C79A5B', pay:180, dauer:9}, /* TKP 9,20 €, längere Laufzeit */
-  {name:'Aldi', branche:'Lebensmittelhandel', photo:'aldi', bg:'#0F2E82', fg:'#F5F5F5', ac:'#FF8A00', pay:130, dauer:6} /* TKP 7,00 € */
+  {name:'Aldi', branche:'Lebensmittelhandel', photo:'aldi', bg:'#0F2E82', fg:'#F5F5F5', ac:'#FF8A00', pay:130, dauer:6}, /* TKP 7,00 € */
+  {name:'Telekom', branche:'Telekommunikation', photo:'telekom', bg:'#E20074', fg:'#F5F5F5', ac:'#1A1A1A', pay:160, dauer:6} /* TKP 8,20 € */
 ];
 function drawIcon(g, kind, x, y, r, color){
   g.save(); g.translate(x,y); g.fillStyle = color; g.strokeStyle = color; g.lineWidth = r*0.18; g.lineCap='round'; g.lineJoin='round';
@@ -779,7 +780,7 @@ const driver = [
     <h3 class="m-h2">Einstellungen</h3>
     <div class="card"><div class="li" style="padding-top:0"><div><div class="t">GPS-Tracking</div><div class="d">${state.tracking?'Aktiv, im Hintergrund':'Pausiert, keine Kontakte'}</div></div><span class="tog ${state.tracking?'on':''}" data-tog="tracking"></span></div><div class="li"><div><div class="t">Push-Erinnerungen</div><div class="d">Foto-Check, Auszahlung, Termine</div></div><span class="tog on"></span></div><div class="li" style="padding-bottom:0"><div><div class="t">Ausgeschlossene Branchen</div><div class="d">${[...state.excl].join(', ')||'keine'}</div></div><button class="slot" style="padding:5px 10px;font-size:12px" data-go="driver:3">Ändern</button></div></div>
     <div class="card"><div class="li" style="padding-top:0"><span class="t">Meine Daten exportieren</span><span class="v" style="color:var(--orange)">DSGVO</span></div><div class="li" style="padding-bottom:0"><span class="t">Konto löschen</span><span class="v" style="color:var(--err)">Anfragen</span></div></div>
-    <div class="brandline"><span class="logo">${LOGO}</span><span>App-Version 0.1 (MVP) · Fahrzeugfotos: BMW 7er, Referenzaufnahmen für den internen Prototyp (Sprite-, Haribo-, Apple- und Aldi-Folierung als Platzhaltermotive, Markennamen/-designs nur zu Demozwecken, keine Kooperation mit den Marken)</span></div></div>${nav('user')}`,
+    <div class="brandline"><span class="logo">${LOGO}</span><span>App-Version 0.1 (MVP) · Fahrzeugfotos: BMW 7er, Referenzaufnahmen für den internen Prototyp (Sprite-, Haribo-, Apple-, Aldi- und Telekom-Folierung als Platzhaltermotive, Markennamen/-designs nur zu Demozwecken, keine Kooperation mit den Marken)</span></div></div>${nav('user')}`,
    explain:{ eyebrow:'Fahrer-App · Screen 9 von 9', h:'Mein Profil', p:'Profilfoto, Auto, Kontakt und Einstellungen an einem Ort. Das Foto dient der Übergabe beim Folierer (der weiß, wen er erwartet) und dem Vertrauen im Support. Hier im Prototyp kannst du dein eigenes Foto direkt hochladen.',
      must:['Profilfoto per Kamera oder Galerie, klare Aussage, wer es sieht','Fahrzeug mit Vorschau und Änderungsmöglichkeit','Kontaktdaten, Adresse','Tracking pausieren, Push-Einstellungen, Branchen-Ausschluss','DSGVO: Datenexport und Kontolöschung'],
      data:['Profilfoto (im Prototyp nur lokal im Browser gespeichert, nie hochgeladen)','Fahrzeug, Kontakt, Einstellungen'], why:'Datenexport und Kontolöschung sind bei Standortdaten Pflicht (Art. 15 und 17 DSGVO) und gehören schon in den MVP, nicht in Version 2.' } }
